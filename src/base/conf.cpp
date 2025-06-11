@@ -27,11 +27,9 @@ int load_general_conf(const char * filename, GeneralConf* conf) {
         conf->log_to_stderr = config["log"]["log_to_stderr"].as<bool>();
     } catch (YAML::Exception &e) {
         fprintf(stderr, "catch a YAML::Excaption, line: %d, column: %d"
-        ", error: %s\n", e.mark.line, e.mark.column, e.msg.c_str());
+            ", error: %s\n", e.mark.line, e.mark.column, e.msg.c_str());
         return -1;
     }
-
-    std::cout << "config: " << conf->log_dir << std::endl;
 
     return 0;
 }

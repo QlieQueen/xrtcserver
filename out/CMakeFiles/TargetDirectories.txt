@@ -1,3 +1,0 @@
-/home/ydqun/workspace/lessons/xrtc1.0/cpp/xrtcserver/out/CMakeFiles/xrtcserver.dir
-/home/ydqun/workspace/lessons/xrtc1.0/cpp/xrtcserver/out/CMakeFiles/edit_cache.dir
-/home/ydqun/workspace/lessons/xrtc1.0/cpp/xrtcserver/out/CMakeFiles/rebuild_cache.dir
