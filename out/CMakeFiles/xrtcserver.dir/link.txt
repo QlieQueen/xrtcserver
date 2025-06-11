@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/xrtcserver.dir/src/base/conf.cpp.o CMakeFiles/xrtcserver.dir/src/main.cpp.o -o xrtcserver   -L/home/ydqun/workspace/lessons/xrtc1.0/cpp/xrtcserver/./third_party/lib  -Wl,-rpath,/home/ydqun/workspace/lessons/xrtc1.0/cpp/xrtcserver/./third_party/lib -Wl,-Bstatic -lyaml-cpp -Wl,-Bdynamic 
