@@ -100,7 +100,7 @@ void EventLoop::delete_io_event(IOWatcher* w) {
 
 class TimerWatcher {
 public:
-    TimerWatcher(EventLoop* el, time_cb_t cb, void* data, bool need_repeat) :
+    TimerWatcher(EventLoop* el, timer_cb_t cb, void* data, bool need_repeat) :
         el(el), cb(cb), data(data), need_repeat(need_repeat)
     {
         timer.data = this;        
