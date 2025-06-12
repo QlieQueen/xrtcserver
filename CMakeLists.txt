@@ -28,4 +28,5 @@ target_link_libraries(xrtcserver
     librtcbase.a
     libabsl_strings.a
     libabsl_throw_delegate.a
+    libev.a
     -no-pie)
