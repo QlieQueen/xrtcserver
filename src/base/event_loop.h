@@ -7,8 +7,10 @@ namespace xrtc {
 
 class EventLoop;
 class IOWatcher;
+class TimerWatcher;
 
 typedef void (*io_cb_t)(EventLoop* el, IOWatcher* w, int fd, int events, void* data);
+typedef void (*timer_cb_t)(EventLoop* el, TimerWatcher* w, void* data);
 
 class EventLoop {
 public:
@@ -24,6 +26,14 @@ public:
     void stop();
 
     IOWatcher* create_io_event(io_cb_t cb, void* data);
+    void start_io_event(IOWatcher* w, int fd, int mask);
+    void stop_io_event(IOWatcher* w, int fd, int mask);
+    void delete_io_event(IOWatcher* w);
+
+    TimerWatcher* create_timer(timer_cb_t cb, void* data, bool need_repeated);
+    void start_timer(TimerWatcher* w, unsigned int usec);
+    void stop_timer(TimerWatcher* w);
+    void delete_timer(TimerWatcher* w);
 
 private:
     void* _owner;
