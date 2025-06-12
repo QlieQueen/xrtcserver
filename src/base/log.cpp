@@ -94,55 +94,24 @@ bool XrtcLog::start() {
 
     _thread = new std::thread([=]() {
         struct stat stat_data;
-        std::stringstream ss;
+        static int counter = 0;
         while (_running) {
             // 检查日志文件是否被删除或者移动
-            if (stat(_log_file.c_str(), &stat_data) < 0) {
-                _out_file.close();
-                _out_file.open(_log_file, std::ios::app);
-            }
+            if (++counter == 100) {
+                counter = 0;
+                if (stat(_log_file.c_str(), &stat_data) < 0) {
+                    _out_file.close();
+                    _out_file.open(_log_file, std::ios::app);
+                }
 
-            if (stat(_log_file_wf.c_str(), &stat_data) < 0) {
-                _out_file_wf.close();
-                _out_file_wf.open(_log_file_wf, std::ios::app);
-            }
-
-            bool write_log = false;
-            {
-                std::unique_lock<std::mutex> lock(_mtx);
-                if (!_log_queue.empty()) {
-                    write_log = true;
-                    while (!_log_queue.empty()) {
-                        ss << _log_queue.front();
-                        _log_queue.pop();
-                    }
+                if (stat(_log_file_wf.c_str(), &stat_data) < 0) {
+                    _out_file_wf.close();
+                    _out_file_wf.open(_log_file_wf, std::ios::app);
                 }
             }
 
-            if (write_log) {
-                _out_file << ss.str();
-                _out_file.flush();
-            }
-
-            ss.str("");
-
-            bool write_log_wf = false;
-            {
-                std::unique_lock<std::mutex> lock(_mtx_wf);
-                if (!_log_queue_wf.empty()) {
-                    while (!_log_queue_wf.empty()) {
-                        ss << _log_queue_wf.front();
-                        _log_queue_wf.pop();
-                    }
-                }
-            }
-
-            if (write_log_wf) {
-                _out_file_wf << ss.str();
-                _out_file_wf.flush();
-            }
-
-            ss.str("");
+            write_log_to_log_file(_out_file, _log_queue, _mtx);
+            write_log_to_log_file(_out_file_wf, _log_queue_wf, _mtx_wf);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(30));
         }
@@ -168,6 +137,24 @@ void XrtcLog::join() {
     if (_thread && _thread->joinable()) {
         _thread->join();
     }
+}
+
+void XrtcLog::write_log_to_log_file(std::ofstream& log_file,
+    std::queue<std::string>& queue,
+    std::mutex& mutex)
+{
+    std::queue<std::string> tmp;
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        if (!queue.empty()) {
+            tmp = std::move(queue);
+        }
+    }
+    while (!tmp.empty()) {
+        log_file << tmp.front();
+        tmp.pop();
+    }
+    log_file.flush();
 }
 
 void XrtcLog::set_log_to_stderr(bool on) {

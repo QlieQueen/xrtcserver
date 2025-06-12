@@ -27,6 +27,10 @@ public:
     void OnLogMessage(const std::string& message) override;
 
 private:
+    static void write_log_to_log_file(std::ofstream& log_file,
+        std::queue<std::string>& queue, std::mutex& mutex);
+
+private:
     std::string             _log_dir;
     std::string             _log_name;
     std::string             _log_level;
