@@ -1,12 +1,14 @@
 #include <iostream>
 
+#include <signal.h>
+
 #include "base/conf.h"
 #include "base/log.h"
 #include "server/signaling_server.h"
 
 xrtc::GeneralConf* g_conf = nullptr;
 xrtc::XrtcLog* g_log = nullptr;
-xrtc::SiganlingServer* g_signaling_server = nullptr;
+xrtc::SignalingServer* g_signaling_server = nullptr;
 
 int init_general_conf(const char* filename) {
     if (!filename) {
@@ -43,13 +45,28 @@ int init_log(const std::string& log_dir,
 }
 
 int init_signaling_server() {
-    g_signaling_server = new xrtc::SiganlingServer();
+    g_signaling_server = new xrtc::SignalingServer();
     int ret = g_signaling_server->init("./conf/signaling_server.yaml");
     if (ret != 0) {
         return -1;
     }
 
     return 0;
+}
+
+static void process_signal(int sig) {
+    RTC_LOG(LS_INFO) << "receive signal: " << sig;
+    switch (sig) {
+        case SIGINT:
+        case SIGTERM:
+            if(g_signaling_server) {
+                g_signaling_server->stop();
+            }
+        break;
+
+        default:
+        break;            
+    }
 }
 
 int main() {
@@ -70,7 +87,11 @@ int main() {
         return -1;
     }
 
-    g_log->join();
+    signal(SIGINT, process_signal);
+    signal(SIGTERM, process_signal);
+
+    g_signaling_server->start();
+    g_signaling_server->join();
 
     return 0;
 }
