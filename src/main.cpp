@@ -35,6 +35,8 @@ int init_log(const std::string& log_dir,
         return -1;
     }
 
+    g_log->start();
+
     return 0;
 }
 
@@ -51,6 +53,9 @@ int main() {
     g_log->set_log_to_stderr(g_conf->log_to_stderr);
 
     RTC_LOG(LS_VERBOSE) << "Hello world!";
+    RTC_LOG(LS_WARNING) << "Hello world!";
+
+    g_log->join();
 
     return 0;
 }
