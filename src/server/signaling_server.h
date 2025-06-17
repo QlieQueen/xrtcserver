@@ -8,6 +8,8 @@
 
 namespace xrtc {
 
+class SignalingWorker;
+
 struct SignalingServerOptions{
     std::string host;
     int port;
@@ -35,6 +37,8 @@ public:
 private:
     void _process_notify(int msg);
     void _stop();
+    int _create_worker(int worker_id);
+
 private:
     SignalingServerOptions _options;
     EventLoop* _el;
@@ -44,9 +48,8 @@ private:
     int _notify_send_fd = -1;
     std::thread* _thread = nullptr;
 
-
-
     int _listen_fd = -1;
+    std::vector<SignalingWorker*> _workers;
 };
 
 } // namespace xrtc

@@ -4,7 +4,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "base/socket.h"
-
+#include "server/signaling_worker.h"
 #include "server/signaling_server.h"
 
 namespace xrtc {
@@ -67,9 +67,19 @@ int SignalingServer::init(const char* conf_file) {
 
     // 创建tcp server
     _listen_fd = create_tcp_server(_options.host.c_str(), _options.port);
+    if (-1 == _listen_fd) {
+        return -1;
+    }
+
     _io_watcher = _el->create_io_event(accept_new_conn, this);
     _el->start_io_event(_io_watcher, _listen_fd, EventLoop::READ);
 
+    // 创建worker
+    for (int i = 0; i < _options.worker_num; ++i) {
+        if (_create_worker(i) != 0) {
+            return -1;
+        }
+    }
 
     return 0;
 }
@@ -124,6 +134,22 @@ void SignalingServer::_stop() {
     close(_listen_fd);
 
     RTC_LOG(LS_INFO) << "signaling server stop";
+}
+
+int SignalingServer::_create_worker(int worker_id) {
+    RTC_LOG(LS_INFO) << "create worker, worker_id: " << worker_id;
+    
+    SignalingWorker* worker = new SignalingWorker(worker_id);
+    
+    if (worker->init() != 0) {
+        return -1;
+    }
+
+    if (!worker->start()) {
+        return -1;
+    }
+
+    return 0;    
 }
 
 void SignalingServer::join(){
