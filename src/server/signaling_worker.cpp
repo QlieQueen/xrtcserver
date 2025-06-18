@@ -99,4 +99,9 @@ void SignalingWorker::_process_notify(int msg) {
     }
 }
 
+int SignalingWorker::notify_new_conn(int fd) {
+
+}
+
+
 }
