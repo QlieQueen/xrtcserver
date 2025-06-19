@@ -3,6 +3,7 @@
 
 #include <thread>
 #include "base/event_loop.h"
+#include "base/lock_free_queue.h"
 
 namespace xrtc {
 
@@ -29,6 +30,7 @@ public:
 private:
     void _process_notify(int msg);
     void _stop();
+    void _new_conn(int fd);
 
 private:
     int _worker_id;
@@ -39,6 +41,7 @@ private:
     int _notify_send_fd = -1;
 
     std::thread* _thread = nullptr;
+    LockFreeQueue<int> _q_conn;
 };
 
 }
