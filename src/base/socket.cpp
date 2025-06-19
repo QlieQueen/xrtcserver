@@ -1,7 +1,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 
 #include <rtc_base/logging.h>
 
@@ -100,6 +102,63 @@ int tcp_accept(int sock, char* host, int* port) {
     }
 
     return fd;
+}
+
+int sock_setnonblock(int sock) {
+    int flags = fcntl(sock, F_GETFL);
+    if (flags == -1) {
+        RTC_LOG(LS_WARNING) << "fcntl(F_GETFL) failed, errno: " << errno
+            << ", errmsg: " << strerror(errno) << ", fd: " << sock;
+        return -1;
+    }
+
+    if (-1 == fcntl(sock, F_SETFL, flags | O_NONBLOCK)) {
+        RTC_LOG(LS_WARNING) << "fcntl(F_SETFL) failed, errno: " << errno
+            << ", errmsg: " << strerror(errno) << ", fd: " << sock;
+        return -1;
+    }
+
+    return 0;
+}
+
+int sock_setnodelay(int sock) {
+    int yes = -1;
+    int ret = setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
+    if (-1 == ret) {
+        RTC_LOG(LS_WARNING) << "setsocket nodelay failed, errno: " << errno
+            << ", errmsg: " << strerror(errno) << ", fd: " << sock;
+        return -1;
+    }
+    return 0;
+}
+
+int sock_peer_to_str(int sock, char* ip, int* port) {
+    struct sockaddr_in sa;
+    socklen_t salen;
+    
+    int ret = getpeername(sock, (struct sockaddr*)&sa, &salen);
+    if (ret == -1) {
+        if (ip) {
+            ip[0] = '?';
+            ip[1] = '\0';
+        }
+
+        if (port) {
+            *port = 0;
+        }
+
+        return -1;
+    }
+
+    if (ip) {
+        strcpy(ip, inet_ntoa(sa.sin_addr));
+    }
+
+    if (port) {
+        *port = ntohs(sa.sin_port);
+    }
+
+    return 0;
 }
 
 

@@ -1,12 +1,15 @@
 #include <unistd.h>
 
 #include <rtc_base/logging.h>
+
+#include "base/socket.h"
+#include "server/tcp_connection.h"
 #include "server/signaling_worker.h"
 
 namespace xrtc {
 
-void signaling_worker_recv_notify(EventLoop* el, IOWatcher* w, int fd,
-    int events, void *data)
+void signaling_worker_recv_notify(EventLoop* /*el*/, IOWatcher* /*w*/, int fd,
+    int /*events*/, void *data)
 {
     int msg;
     if (read(fd, &msg, sizeof(int)) != sizeof(int)) {
@@ -88,8 +91,40 @@ void SignalingWorker::_stop() {
     close(_notify_send_fd);
 }
 
+void conn_io_cb(EventLoop* /*el*/, IOWatcher* /*w*/, int fd, int events, void* data) {
+    SignalingWorker* worker = (SignalingWorker*)data;
+
+    if (events & EventLoop::READ) {
+        worker->_read_query(fd);
+    }
+}
+
 void SignalingWorker::_new_conn(int fd) {
     RTC_LOG(LS_INFO) << "signaling worker " << _worker_id << ", receive fd: " << fd;
+
+    if (fd <= 0) {
+        RTC_LOG(WARNING) << "invalid fd: " << fd;
+    }
+
+    sock_setnonblock(fd);
+    sock_setnodelay(fd);
+
+    TcpConnection* c = new TcpConnection(fd);
+    sock_peer_to_str(fd, c->ip, &(c->port));
+    c->io_watcher = _el->create_io_event(conn_io_cb, this);
+    _el->start_io_event(c->io_watcher, fd, EventLoop::READ);
+
+    if ((size_t)fd > _conns.size()) {
+        _conns.resize(fd * 2);
+    }
+
+    _conns[fd] = c;
+
+}
+
+void SignalingWorker::_read_query(int fd) {
+    RTC_LOG(LS_INFO) << "signaling worker " << _worker_id
+        << " receive read event, fd: " << fd;
 }
 
 void SignalingWorker::_process_notify(int msg) {

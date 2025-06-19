@@ -7,6 +7,8 @@
 
 namespace xrtc {
 
+class TcpConnection;
+
 class SignalingWorker {
 public:
     enum {
@@ -26,11 +28,13 @@ public:
 
     friend void signaling_worker_recv_notify(EventLoop* el, IOWatcher* w, int fd,
         int events, void *data);
+    friend void conn_io_cb(EventLoop*, IOWatcher*, int fd, int events, void* data);
 
 private:
     void _process_notify(int msg);
     void _stop();
     void _new_conn(int fd);
+    void _read_query(int fd);
 
 private:
     int _worker_id;
@@ -42,6 +46,8 @@ private:
 
     std::thread* _thread = nullptr;
     LockFreeQueue<int> _q_conn;
+
+    std::vector<TcpConnection*> _conns;
 };
 
 }

@@ -54,7 +54,7 @@ private:
 
     int _listen_fd = -1;
     std::vector<SignalingWorker*> _workers;
-    int _next_worker_index = 0;
+    size_t _next_worker_index = 0;
 };
 
 } // namespace xrtc

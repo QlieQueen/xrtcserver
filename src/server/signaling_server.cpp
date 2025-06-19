@@ -9,7 +9,7 @@
 
 namespace xrtc {
 
-void signaling_server_recv_nofity(EventLoop* el, IOWatcher* w, int fd, int events, void* data) {
+void signaling_server_recv_nofity(EventLoop* /*el*/, IOWatcher* /*w*/, int fd, int /*events*/, void* data) {
     int msg;
     if (read(fd, &msg, sizeof(int)) != sizeof(int)) {
         RTC_LOG(LS_WARNING) << "read from pipe error: " << errno 
@@ -36,7 +36,7 @@ void accept_new_conn(EventLoop* /*el*/, IOWatcher* /*w*/,
     RTC_LOG(LS_INFO) << "accept new conn, fd: " << fd << ", ip: " << cip 
         << ", port: " << cport;
 
-    SignalingServer* server = (SignalingServer*) data;
+    SignalingServer* server = (SignalingServer*)data;
     server->_dispatch_new_conn(cfd);
 }
 
@@ -194,7 +194,8 @@ int SignalingServer::_create_worker(int worker_id) {
 }
 
 void SignalingServer::_dispatch_new_conn(int fd) {
-    int index = _next_worker_index;
+    // 以轮询的方式分配fd到worker上
+    size_t index = _next_worker_index;
     _next_worker_index++;
     if (_next_worker_index >= _workers.size()) {
         _next_worker_index = 0;
