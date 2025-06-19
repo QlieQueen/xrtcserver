@@ -161,5 +161,22 @@ int sock_peer_to_str(int sock, char* ip, int* port) {
     return 0;
 }
 
+int sock_read_data(int sock, char* buf, size_t len) {
+    int nread = read(sock, buf, len);
+    if (-1 == nread) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            nread = 0;
+        } else {
+            RTC_LOG(LS_WARNING) << "sock read failed, error: " << errno
+                << ", errmsg: " << strerror(errno) << ", fd: " << sock;
+            return -1;    
+        }
+    } else if (0 == nread) {
+        RTC_LOG(LS_WARNING) << "connection closed, fd: " << sock;
+        return -1;
+    }
+
+    return nread;
+}
 
 } // namespace xrtc

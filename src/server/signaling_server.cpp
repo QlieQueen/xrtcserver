@@ -34,7 +34,7 @@ void accept_new_conn(EventLoop* /*el*/, IOWatcher* /*w*/,
     }
 
     RTC_LOG(LS_INFO) << "accept new conn, fd: " << fd << ", ip: " << cip 
-        << ", port: " << cport;
+        << ", port: " << cport << ", client fd: " << cfd;
 
     SignalingServer* server = (SignalingServer*)data;
     server->_dispatch_new_conn(cfd);

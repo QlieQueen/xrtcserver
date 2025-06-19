@@ -125,6 +125,30 @@ void SignalingWorker::_new_conn(int fd) {
 void SignalingWorker::_read_query(int fd) {
     RTC_LOG(LS_INFO) << "signaling worker " << _worker_id
         << " receive read event, fd: " << fd;
+    
+    if (fd < 0 || (size_t)fd >= _conns.size()) {
+        RTC_LOG(LS_WARNING) << "invalid fd: " << fd;
+        return;
+    }
+
+    TcpConnection* c = _conns[fd];
+    int nread = 0;
+    int read_len = c->bytes_expected;
+    int qb_len = sdslen(c->querybuf);
+    c->querybuf = sdsMakeRoomFor(c->querybuf, read_len);
+    nread = sock_read_data(fd, c->querybuf + qb_len, read_len);
+    
+    RTC_LOG(LS_INFO) << "sock read data, len: " << nread;
+    
+    if (-1 == nread) {
+        //_close_conn(fd);
+        return;
+    } else if (nread > 0) {
+        sdsIncrLen(c->querybuf, nread);  
+    }
+
+
+
 }
 
 void SignalingWorker::_process_notify(int msg) {
