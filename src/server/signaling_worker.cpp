@@ -141,14 +141,65 @@ void SignalingWorker::_read_query(int fd) {
     RTC_LOG(LS_INFO) << "sock read data, len: " << nread;
     
     if (-1 == nread) {
-        //_close_conn(fd);
+        _close_conn(c);
         return;
     } else if (nread > 0) {
         sdsIncrLen(c->querybuf, nread);  
     }
 
+    int ret = _process_query_buffer(c);
+    if (ret != 0) {
+        _close_conn(c);
+        return;
+    }
 
+}
 
+void SignalingWorker::_close_conn(TcpConnection* c) {
+    close(c->fd);
+    _remove_conn(c);
+}
+
+void SignalingWorker::_remove_conn(TcpConnection* c) {
+    _el->delete_io_event(c->io_watcher);
+    _conns[c->fd] = nullptr;
+    delete c;
+}
+
+int SignalingWorker::_process_query_buffer(TcpConnection* c) {
+    while (sdslen(c->querybuf) >= c->bytes_processed + c->bytes_expected) {
+        xhead_t* head = (xhead_t*)(c->querybuf);
+        if (TcpConnection::STATE_HEAD == c->current_state) {
+            if (XHEAD_MAGIC_NUM != head->magic_num) {
+                RTC_LOG(LS_WARNING) << "invalid data, fd: " << c->fd;
+                return -1;
+            }
+            c->current_state = TcpConnection::STATE_BODY;
+            c->bytes_processed = XHEAD_SIZE;
+            c->bytes_expected = head->body_len;
+        } else {
+            rtc::Slice header(c->querybuf, XHEAD_SIZE);
+            rtc::Slice body(c->querybuf + XHEAD_SIZE, head->body_len);
+
+            int ret = _process_request(c, header, body);
+            if (ret != 0) {
+                return -1;
+            }
+
+            // 短链接处理
+            c->bytes_processed = 65535;
+        }
+    }
+
+    return 0;
+}
+
+int SignalingWorker::_process_request(TcpConnection* c,
+    const rtc::Slice& header,
+    const rtc::Slice& body)
+{
+    RTC_LOG(LS_INFO) << "receive body: " << body.data();
+    return 0;
 }
 
 void SignalingWorker::_process_notify(int msg) {
