@@ -2,9 +2,12 @@
 
 #include <rtc_base/logging.h>
 
+#include "xrtc_server_def.h"
 #include "base/socket.h"
 #include "server/tcp_connection.h"
 #include "server/signaling_worker.h"
+
+
 
 namespace xrtc {
 
@@ -242,6 +245,72 @@ int SignalingWorker::_process_request(TcpConnection* c,
     const rtc::Slice& body)
 {
     RTC_LOG(LS_INFO) << "receive body: " << body.data();
+
+    xhead_t* xh = (xhead_t*)(header.data());
+
+    int cmdno;
+    json root;
+    try {
+        root = json::parse(body.data());
+        cmdno = root["cmdno"];
+
+        RTC_LOG(LS_INFO) << "cmdno: " << cmdno;
+    } catch (json::parse_error& e) {
+        RTC_LOG(LS_WARNING) << "parse error: " << e.what()
+            << ", pos: " << e.byte 
+            << ", fd: " << c->fd
+            << ", log_id: " << xh->log_id;
+        return -1;
+    }
+
+    switch(cmdno) {
+        case CMDNO_PUSH:
+            return _process_push(cmdno, c, root, xh->log_id);
+        break;
+
+        default:
+        break;
+    }
+
+    return 0;
+}
+
+int SignalingWorker::_process_push(int cmdno, TcpConnection* c, 
+    const json& root, uint32_t log_id) 
+{
+    uint64_t uid;
+    std::string stream_name;
+    int audio;
+    int video;
+
+    try {
+        uid = root.at("uid");
+        stream_name = root.at("stream_name");
+        audio = root.at("audio");
+        video = root.at("video");
+
+    } catch (const json::out_of_range& e) {
+        RTC_LOG(LS_WARNING) << "parse error: " << e.what()
+            << ", fd: " << c->fd
+            << ", log_id: " << log_id;
+        return -1;
+    }
+
+    RTC_LOG(LS_INFO) << "cmdno[" << cmdno
+        << "] uid[" << uid
+        << "] stream_name[" << stream_name
+        << "] audio[" << audio
+        << "] video[" << video
+        << "] signaling server push request";
+
+    std::shared_ptr<RtcMsg> msg = std::make_shared<RtcMsg>();
+    msg->cmdno = cmdno;
+    msg->uid = uid;
+    msg->stream_name = stream_name;
+    msg->audio = audio;
+    msg->video = video;
+
+    //return g_rtc_server->send_rtc_msg(msg);
     return 0;
 }
 

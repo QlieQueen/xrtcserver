@@ -5,9 +5,12 @@
 
 #include <rtc_base/slice.h>
 
+#include "base/json.hpp"
 #include "base/event_loop.h"
 #include "base/lock_free_queue.h"
 #include "server/signaling_server.h"
+
+using json = nlohmann::json;
 
 namespace xrtc {
 
@@ -47,6 +50,7 @@ private:
     void _close_conn(TcpConnection* c);
     void _remove_conn(TcpConnection* c);
     void _process_timeout(TcpConnection* c);
+    int _process_push(int cmdno, TcpConnection* c, const json& root, uint32_t log_id);
 
 private:
     int _worker_id;
