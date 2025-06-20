@@ -9,6 +9,8 @@ TcpConnection::TcpConnection(int fd) :
 
 }
 
-TcpConnection::~TcpConnection() {}
-
+TcpConnection::~TcpConnection() {
+    sdsfree(querybuf);
+}
+    
 } // namespace xrtc
