@@ -1,5 +1,6 @@
 #include <unistd.h>
 
+#include <rtc_base/zmalloc.h>
 #include <rtc_base/logging.h>
 
 #include "xrtc_server_def.h"
@@ -313,12 +314,61 @@ int SignalingWorker::_process_push(int cmdno, TcpConnection* c,
     msg->log_id = log_id;
     msg->worker = this;
     msg->conn = c;
+    msg->fd = c->fd;
 
     return g_rtc_server->send_rtc_msg(msg);
 }
 
 void SignalingWorker::_response_server_offer(std::shared_ptr<RtcMsg> msg) {
-    RTC_LOG(LS_WARNING) << "===========response server offer: " << msg->sdp;
+    TcpConnection* c = (TcpConnection*)msg->conn;
+    if (!c) {
+        return;
+    }
+
+    // 此处使用msg中的fd而不是使用msg->conn->fd在SignalingWorkers中的_conns查找
+    // 是因为msg->conn可能已经因为fd超时断开或者客户端主动断开而变成野指针.
+    int fd = msg->fd;
+    if (fd < 0 || (size_t)fd >= _conns.size()) {
+        return;
+    }
+
+    // 因为查找到的TcpConnection可能是新连接，所以需要跟msg中的conn进行比较, 确认
+    // 是否是原本的连接
+    if (_conns[fd] != c) {
+        return;
+    }
+
+    // 构造响应头
+    xhead_t* xh = (xhead_t*)(c->querybuf);
+    rtc::Slice header(c->querybuf, XHEAD_SIZE);
+    char* buf = (char*)zmalloc(XHEAD_SIZE + MAX_RES_BUF);
+    if (!buf) {
+        RTC_LOG(LS_WARNING) << "zmalloc error, log_id: " << xh->log_id;
+        return;
+    }
+
+    memcpy(buf, header.data(), header.size());
+    xhead_t* res_xh = (xhead_t*)buf;
+
+    json res_root;
+    res_root["err_no"] = msg->err_no;
+    if (msg->err_no != 0) {
+        res_root["err_msg"] = "process error";
+        res_root["offer"] = "";
+    } else {
+        res_root["err_msg"] = "success";
+        res_root["offer"] = msg->sdp;
+    }
+
+    std::string json_data = res_root.dump();
+    RTC_LOG(LS_INFO) << "response body: " << json_data;
+
+    res_xh->body_len = json_data.size();
+    snprintf(buf + XHEAD_SIZE, MAX_RES_BUF, "%s", json_data.c_str());
+
+    rtc::Slice reply(buf, XHEAD_SIZE + res_xh->body_len);
+    //_add_reply(c, reply);
+
 }
 
 void SignalingWorker::_process_rtc_msg() {

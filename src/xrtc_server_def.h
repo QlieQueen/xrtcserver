@@ -1,6 +1,8 @@
 #ifndef XRTC_SERVER_DEF_H_
 #define XRTC_SERVER_DEF_H_
 
+#define MAX_RES_BUF 4096
+
 #define CMDNO_PUSH     1
 #define CMDNO_PULL     2
 #define CMDNO_ANSWER   3
@@ -18,6 +20,7 @@ struct RtcMsg {
     uint32_t log_id = 0;
     void* worker = nullptr;
     void* conn = nullptr;
+    int fd = 0;
     std::string sdp;
     int err_no = 0;
 };
