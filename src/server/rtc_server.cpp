@@ -1,5 +1,6 @@
 #include <unistd.h>
 
+#include <rtc_base/crc32.h>
 #include <rtc_base/logging.h>
 #include <yaml-cpp/yaml.h>
 
@@ -169,14 +170,27 @@ void RtcServer::_stop() {
     }
 }
 
+RtcWorker* RtcServer::_get_worker(const std::string& stream_name) {
+    if (_workers.size() == 0 || _workers.size() != (size_t)_options.worker_num) {
+        return nullptr;
+    }
+    
+    uint32_t num = rtc::ComputeCrc32(stream_name);
+    size_t index = num % _options.worker_num;
+    return _workers[index];
+}
+
 void RtcServer::_process_rtc_msg() {
     std::shared_ptr<RtcMsg> msg = pop_msg();
     if (!msg) {
         return;
     }
 
-    RTC_LOG(LS_WARNING) << "===========================cmdno: " << msg->cmdno 
-        << ", uid: " << msg->uid;
+    RtcWorker* worker = _get_worker(msg->stream_name);
+    if (worker) {
+        worker->send_rtc_msg(msg);
+    }
+
 }
 
 void RtcServer::_process_notify(int msg) {

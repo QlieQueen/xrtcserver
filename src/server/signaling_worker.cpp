@@ -310,6 +310,7 @@ int SignalingWorker::_process_push(int cmdno, TcpConnection* c,
     msg->stream_name = stream_name;
     msg->audio = audio;
     msg->video = video;
+    msg->log_id = log_id;
 
     return g_rtc_server->send_rtc_msg(msg);
 }
