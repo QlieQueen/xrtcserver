@@ -8,5 +8,5 @@ then
     make clean
 else
     echo "make"
-    make
+    make -j 2
 fi

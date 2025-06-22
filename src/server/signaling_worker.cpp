@@ -120,6 +120,10 @@ void conn_io_cb(EventLoop* /*el*/, IOWatcher* /*w*/, int fd, int events, void* d
     if (events & EventLoop::READ) {
         worker->_read_query(fd);
     }
+
+    if (events & EventLoop::WRITE) {
+        worker->_write_reply(fd);
+    }
 }
 
 void conn_timer_cb(EventLoop* el, TimerWatcher* /*w*/, void* data) {
@@ -127,6 +131,45 @@ void conn_timer_cb(EventLoop* el, TimerWatcher* /*w*/, void* data) {
     TcpConnection* c = (TcpConnection*)data;
     worker->_process_timeout(c);
 
+}
+
+void SignalingWorker::_write_reply(int fd) {
+    if (fd <= 0 || (size_t)(fd) >= _conns.size()) {
+        return;
+    }
+
+    TcpConnection* c = _conns[fd];
+    if (!c) {
+        return;
+    }
+
+    while (!c->reply_list.empty()) {
+        rtc::Slice reply = c->reply_list.front();
+        int nwritten = sock_write_data(c->fd, reply.data() + c->cur_resp_pos, 
+            reply.size() - c->cur_resp_pos);
+        if (-1 == nwritten) {
+            _close_conn(c);
+            return;
+        } else if (0 == nwritten) {
+            RTC_LOG(LS_WARNING) << "write zero bytes, fd: " << c->fd
+                << ", worker_id: " << _worker_id;
+        } else if ((nwritten + c->cur_resp_pos) >= reply.size()) {
+            // 写入完成
+            c->reply_list.pop_front();
+            zfree((void*)reply.data());
+            c->cur_resp_pos = 0;
+            RTC_LOG(LS_INFO) << "write finish, fd: " << c->fd
+                << ", worker_id: " << _worker_id;
+        } else {
+            c->cur_resp_pos += nwritten;
+        }
+    }
+    c->last_interaction = _el->now();
+    if (c->reply_list.empty()) {
+        _el->stop_io_event(c->io_watcher, c->fd, EventLoop::WRITE);
+        RTC_LOG(LS_INFO) << "stop write event, fd: " << c->fd
+            << ", worker_id: " << _worker_id;
+    }
 }
 
 void SignalingWorker::_process_timeout(TcpConnection* c) {
@@ -347,6 +390,8 @@ void SignalingWorker::_response_server_offer(std::shared_ptr<RtcMsg> msg) {
         return;
     }
 
+    // 构造response的头部
+    // 复用request的头部（只需要在后续修改body_size）
     memcpy(buf, header.data(), header.size());
     xhead_t* res_xh = (xhead_t*)buf;
 
@@ -364,11 +409,17 @@ void SignalingWorker::_response_server_offer(std::shared_ptr<RtcMsg> msg) {
     RTC_LOG(LS_INFO) << "response body: " << json_data;
 
     res_xh->body_len = json_data.size();
+    // 构造response的body
     snprintf(buf + XHEAD_SIZE, MAX_RES_BUF, "%s", json_data.c_str());
 
     rtc::Slice reply(buf, XHEAD_SIZE + res_xh->body_len);
-    //_add_reply(c, reply);
+    _add_reply(c, reply);
 
+}
+
+void SignalingWorker::_add_reply(TcpConnection* c, const rtc::Slice& reply) {
+    c->reply_list.push_back(reply);
+    _el->start_io_event(c->io_watcher, c->fd, EventLoop::WRITE);
 }
 
 void SignalingWorker::_process_rtc_msg() {
