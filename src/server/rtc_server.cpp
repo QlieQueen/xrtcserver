@@ -4,6 +4,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "server/rtc_server.h"
+#include "server/rtc_worker.h"
 
 namespace xrtc {
 
@@ -27,7 +28,25 @@ RtcServer::RtcServer() :
 
 }
 
-RtcServer::~RtcServer() {}
+RtcServer::~RtcServer() {
+    if (_el) {
+        delete _el;
+        _el = nullptr;
+    }
+
+    if (_thread) {
+        delete _thread;
+        _thread = nullptr;
+    }
+
+    for (auto worker : _workers) {
+        if (worker) {
+            delete worker;
+        }
+    }
+
+    _workers.clear();
+}
 
 int RtcServer::init(const char* conf_file) {
     if (!conf_file) {
@@ -37,7 +56,6 @@ int RtcServer::init(const char* conf_file) {
 
     try {
         YAML::Node config = YAML::LoadFile(conf_file);
-        RTC_LOG(LS_INFO) << "rtc server options: " << config;
         _options.worker_num = config["worker_num"].as<int>();
     } catch (YAML::Exception& e) {
         RTC_LOG(LS_WARNING) << "rtc server load conf file error: " << e.msg;
@@ -55,6 +73,30 @@ int RtcServer::init(const char* conf_file) {
 
     _pipe_watcher = _el->create_io_event(rtc_server_recv_notify, this);
     _el->start_io_event(_pipe_watcher, _notify_recv_fd, EventLoop::READ);
+
+
+    for (int i = 0; i < _options.worker_num; ++i) {
+        if (_create_worker(i) != 0) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int RtcServer::_create_worker(int worker_id) {
+    RTC_LOG(LS_INFO) << "rtc server create worker, worker_id: " << worker_id;
+    RtcWorker* worker = new RtcWorker(worker_id, _options);
+
+    if (worker->init() != 0) {
+        return -1;
+    }
+
+    if (!worker->start()) {
+        return -1;   
+    }
+
+    _workers.push_back(worker);
 
     return 0;
 }
@@ -111,12 +153,20 @@ int RtcServer::send_rtc_msg(std::shared_ptr<RtcMsg> msg) {
 }
 
 void RtcServer::_stop() {
+    RTC_LOG(INFO) << "[DEBUG] RtcServer::_stop";
     _el->delete_io_event(_pipe_watcher);
     _el->stop();
     close(_notify_recv_fd);
     close(_notify_send_fd);
 
-    RTC_LOG(LS_INFO) << "rtc server stop";
+    for (auto worker : _workers) {
+        RTC_LOG(INFO) << "[DEBUG] RtcServer::_stop begin";
+        if (worker) {
+            RTC_LOG(INFO) << "[DEBUG] RtcServer::_stop worker";
+            worker->stop();
+            worker->join();
+        }
+    }
 }
 
 void RtcServer::_process_rtc_msg() {

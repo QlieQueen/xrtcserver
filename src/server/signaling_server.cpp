@@ -123,7 +123,7 @@ bool SignalingServer::start() {
     }
 
     _thread = new std::thread([=]() {
-        RTC_LOG(LS_INFO) << "signaling server event loop run";
+        RTC_LOG(LS_INFO) << "signaling server event loop start";
         _el->start();
         RTC_LOG(LS_INFO) << "signaling server event loop stop";
     });
@@ -176,7 +176,7 @@ void SignalingServer::_stop() {
 }
 
 int SignalingServer::_create_worker(int worker_id) {
-    RTC_LOG(LS_INFO) << "create worker, worker_id: " << worker_id;
+    RTC_LOG(LS_INFO) << "signaling server create worker, worker_id: " << worker_id;
     
     SignalingWorker* worker = new SignalingWorker(worker_id, _options);
     
