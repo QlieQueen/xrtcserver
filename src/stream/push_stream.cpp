@@ -14,7 +14,11 @@ PushStream::~PushStream() {
 }
 
 std::string PushStream::create_offer() {
-    return _pc->create_offer();
+    RTCOfferAnswerOptions options;
+    options.recv_audio = _audio;
+    options.recv_video = _video;
+
+    return _pc->create_offer(options);
 }
 
 
