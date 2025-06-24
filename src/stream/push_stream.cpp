@@ -13,5 +13,9 @@ PushStream::~PushStream() {
 
 }
 
+std::string PushStream::create_offer() {
+    return _pc->create_offer();
+}
+
 
 }

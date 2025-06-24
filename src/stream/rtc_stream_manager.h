@@ -3,10 +3,13 @@
 
 #include <string>
 #include <stdint.h>
+#include <unordered_map>
 
 #include "base/event_loop.h"
 
 namespace xrtc {
+
+class PushStream;
 
 class RtcStreamManager {
 public:
@@ -17,9 +20,11 @@ public:
         bool audio, bool video, uint32_t log_id,
         std::string& offer);
     
+    PushStream* find_push_stream(const std::string& stream_name);
 
 private:
     EventLoop* _el;
+    std::unordered_map<std::string, PushStream*> _push_streams;
 };
 
 

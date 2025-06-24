@@ -11,6 +11,7 @@ public:
         bool audio, bool video, uint32_t log_id);
 
     ~PushStream() override;
+    std::string create_offer() override;
 };
 
 }
