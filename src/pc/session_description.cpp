@@ -157,6 +157,28 @@ static void build_rtp_map(std::shared_ptr<MediaContentDescription> content,
 
 }
 
+static void build_rtp_direction(std::shared_ptr<MediaContentDescription> content,
+       std::stringstream& ss)
+{
+    switch(content->direction()) {
+        case RtpDirection::k_send_recv:
+            ss << "a=sendrecv\r\n";
+            break;
+
+        case RtpDirection::k_recv_only:
+            ss << "a=recvonly\r\n";
+            break;
+
+        case RtpDirection::k_send_only:
+            ss << "a=sendonly\r\n";
+            break;
+
+        default:
+            ss << "a=inactive\r\n";
+            break;
+    } 
+}
+
 std::string SessionDescription::to_string() {
     std::stringstream ss;
 
@@ -174,6 +196,7 @@ std::string SessionDescription::to_string() {
     // BUNDLE
     std::vector<const ContentGroup*> content_group = get_group_by_name("BUNDLE"); 
     if (!content_group.empty()) {
+        // bundle: 音频和视频公用一条传输通道
         ss <<"a=group:BUNDLE";
         for (auto group : content_group) {
             for (auto content_name : group->content_names()) {
@@ -200,6 +223,14 @@ std::string SessionDescription::to_string() {
 
         ss << "c=IN IP4 0.0.0.0\r\n";
         ss << "a=rtcp:9 IN IP4 0.0.0.0\r\n";
+
+        // 媒体方向
+        ss << "a=mid:" << content->mid() << "\r\n";
+        build_rtp_direction(content, ss);
+        
+        if (content->rtcp_mux()) {
+            ss << "a=rtcp-mux\r\n";
+        }
 
         build_rtp_map(content, ss);
     }
