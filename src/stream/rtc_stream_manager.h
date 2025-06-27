@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <unordered_map>
 
+#include <rtc_base/rtc_certificate.h>
+
 #include "base/event_loop.h"
 
 namespace xrtc {
@@ -18,6 +20,7 @@ public:
 
     int create_push_stream(uint64_t uid, const std::string& stream_name, 
         bool audio, bool video, uint32_t log_id,
+        rtc::RTCCertificate* certificate,
         std::string& offer);
     
     PushStream* find_push_stream(const std::string& stream_name);

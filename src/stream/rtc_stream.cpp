@@ -1,4 +1,5 @@
 #include "stream/rtc_stream.h"
+#include "rtc_base/rtc_certificate.h"
 
 namespace xrtc{
 
@@ -14,5 +15,10 @@ RtcStream::RtcStream(EventLoop* el, uint64_t uid, const std::string& stream_name
 RtcStream::~RtcStream() {
 
 }
+
+int RtcStream::start(rtc::RTCCertificate* certificate) {
+    return _pc->init(certificate);
+}
+
 
 } // namespace xrtc

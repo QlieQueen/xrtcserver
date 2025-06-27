@@ -4,6 +4,8 @@
 
 #include "pc/session_description.h"
 #include "pc/codec_info.h"
+#include "rtc_base/rtc_certificate.h"
+#include "rtc_base/ssl_fingerprint.h"
 
 #include <rtc_base/logging.h>
 
@@ -112,12 +114,20 @@ std::vector<const ContentGroup*> SessionDescription::get_group_by_name(
 
 
 bool SessionDescription::add_transport_info(const std::string& mid, 
-        const IceParamters& icg_param) 
+        const IceParamters& icg_param, 
+        rtc::RTCCertificate* certificate) 
 {
     auto tdesc = std::make_shared<TransportDescription>();
     tdesc->mid = mid;
     tdesc->ice_ufrag = icg_param.ice_ufrag;
     tdesc->ice_pwd = icg_param.ice_pwd;
+    if (certificate) {
+        tdesc->identity_fingerprint = rtc::SSLFingerprint::CreateFromCertificate(*certificate);
+        if (!tdesc->identity_fingerprint) {
+            RTC_LOG(LS_WARNING) << "get fingerprint failed";
+            return false;
+        }
+    }
 
     _transport_infos.push_back(tdesc);
 
@@ -252,6 +262,12 @@ std::string SessionDescription::to_string() {
         if (transport_info) {
             ss <<"a=ice-ufrag:" << transport_info->ice_ufrag << "\r\n";
             ss <<"a=ice-pwd:" << transport_info->ice_pwd << "\r\n";
+
+            auto fp = transport_info->identity_fingerprint.get();
+            if (fp) {
+                ss << "a=fingerprint:" << fp->algorithm << " " << fp->GetRfc4572Fingerprint()
+                    << "\r\n";
+            }
         }
 
         // 媒体方向

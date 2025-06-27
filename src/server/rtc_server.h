@@ -6,6 +6,8 @@
 #include <memory>
 #include <thread>
 
+#include <rtc_base/rtc_certificate.h>
+
 #include "xrtc_server_def.h"
 #include "base/event_loop.h"
 //#include "server/rtc_worker.h"
@@ -45,6 +47,7 @@ private:
     void _process_rtc_msg();
     int _create_worker(int worker_id);
     RtcWorker* _get_worker(const std::string& stream_name);
+    int _generate_and_check_certificate();
 
 private:
     EventLoop* _el;    
@@ -59,6 +62,7 @@ private:
     std::mutex _q_msg_mutex;
 
     std::vector<RtcWorker*> _workers;
+    rtc::scoped_refptr<rtc::RTCCertificate> _certificate;
 };
 
 } // namespace xrtc

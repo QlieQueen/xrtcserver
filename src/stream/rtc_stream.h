@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 #include <stdint.h>
+#include <rtc_base/rtc_certificate.h>
+
 
 #include "base/event_loop.h"
 #include "pc/peer_connection.h"
@@ -16,6 +18,8 @@ public:
         bool audio, bool video, uint32_t log_id);
     
     virtual ~RtcStream();
+
+    int start(rtc::RTCCertificate* certificate);
 
     virtual std::string create_offer() = 0;
 

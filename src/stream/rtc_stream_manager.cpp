@@ -1,3 +1,4 @@
+#include "rtc_base/rtc_certificate.h"
 #include "stream/push_stream.h"
 #include "stream/rtc_stream_manager.h"
 
@@ -23,6 +24,7 @@ PushStream* RtcStreamManager::find_push_stream(const std::string& stream_name) {
 
 int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream_name, 
         bool audio, bool video, uint32_t log_id,
+        rtc::RTCCertificate* certificate,
         std::string& offer)
 {
     PushStream* stream = find_push_stream(stream_name);
@@ -34,6 +36,7 @@ int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream
     stream = new PushStream(_el, uid, stream_name,
         audio, video, log_id);
     
+    stream->start(certificate);
     offer = stream->create_offer();
 
     return -1;

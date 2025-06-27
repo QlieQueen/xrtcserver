@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <rtc_base/logging.h>
 #include "server/rtc_worker.h"
+#include "rtc_base/rtc_certificate.h"
 #include "server/signaling_worker.h"
 
 
@@ -119,7 +120,9 @@ void RtcWorker::_stop() {
 void RtcWorker::_process_push(std::shared_ptr<RtcMsg> msg) {
     std::string offer;
     int ret = _rtc_stream_mgr->create_push_stream(msg->uid, msg->stream_name,
-        msg->audio, msg->video, msg->log_id, offer);
+        msg->audio, msg->video, msg->log_id, 
+        (rtc::RTCCertificate*)(msg->certificate),
+        offer);
 
     RTC_LOG(LS_INFO) << "offer: " << offer;
 
