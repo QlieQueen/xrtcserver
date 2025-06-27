@@ -1,5 +1,6 @@
 #include "pc/peer_connection.h"
 #include "pc/session_description.h"
+#include "ice/icg_credentials.h"
 
 namespace xrtc {
 
@@ -26,11 +27,14 @@ PeerConnection::~PeerConnection() {
 std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& options) {
     _local_desc = std::make_unique<SessionDescription>(SdpType::k_offer);
 
+    IceParamters ice_param = IceCredentials::create_random_ice_credentials();
+
     if (options.recv_audio) {
         auto audio = std::make_shared<AudioContentDescription>();
         audio->set_direction(get_direction(options.send_audio, options.recv_audio));
         audio->set_rtcp_mux(options.use_rtcp_mux);
         _local_desc->add_content(audio);
+        _local_desc->add_transport_info(audio->mid(), ice_param);
     }
 
     if (options.recv_video) {
@@ -38,6 +42,7 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& options) {
         video->set_direction(get_direction(options.send_audio, options.recv_audio));
         video->set_rtcp_mux(options.use_rtcp_mux);
         _local_desc->add_content(video);
+        _local_desc->add_transport_info(video->mid(), ice_param);
     }
 
     if (options.use_rtp_mux) {
