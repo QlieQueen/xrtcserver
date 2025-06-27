@@ -81,6 +81,14 @@ private:
     std::vector<std::string> _content_names; // 存放content_names名字
 };
 
+enum ConnectionRole {
+    NONE = 0,
+    ACTIVE,
+    PASSIVE,
+    ACTPASS,
+    HOLDCONN
+};
+
 class TransportDescription {
     
 public:
@@ -88,6 +96,7 @@ public:
     std::string ice_ufrag;
     std::string ice_pwd;
     std::unique_ptr<rtc::SSLFingerprint> identity_fingerprint;
+    ConnectionRole connection_role = ConnectionRole::NONE;
 };
 
 class SessionDescription {

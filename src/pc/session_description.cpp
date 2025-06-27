@@ -112,6 +112,22 @@ std::vector<const ContentGroup*> SessionDescription::get_group_by_name(
     return content_groups;
 }
 
+static std::string connection_role_to_string(ConnectionRole role) {
+    switch (role) {
+        case ConnectionRole::ACTIVE:
+            return "active";
+        case ConnectionRole::PASSIVE:
+            return "passive";
+        case ConnectionRole::ACTPASS:
+            return "actpass";
+        case ConnectionRole::HOLDCONN:
+            return "holdconn";
+        default:
+            return "none";
+    }
+
+}
+
 
 bool SessionDescription::add_transport_info(const std::string& mid, 
         const IceParamters& icg_param, 
@@ -127,6 +143,12 @@ bool SessionDescription::add_transport_info(const std::string& mid,
             RTC_LOG(LS_WARNING) << "get fingerprint failed";
             return false;
         }
+    }
+
+    if (SdpType::k_offer == _sdp_type) {
+        tdesc->connection_role = ConnectionRole::ACTPASS;
+    } else {
+        tdesc->connection_role = ConnectionRole::ACTIVE;
     }
 
     _transport_infos.push_back(tdesc);
@@ -267,6 +289,8 @@ std::string SessionDescription::to_string() {
             if (fp) {
                 ss << "a=fingerprint:" << fp->algorithm << " " << fp->GetRfc4572Fingerprint()
                     << "\r\n";
+                ss << "a=setup:" << connection_role_to_string(
+                    transport_info->connection_role) << "\r\n";
             }
         }
 

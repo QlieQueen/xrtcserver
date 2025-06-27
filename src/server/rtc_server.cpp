@@ -12,7 +12,7 @@
 
 namespace xrtc {
 
-const unsigned long k_year_in_ms = 365 * 24 * 3600 * 1000L;
+const uint64_t k_year_in_ms =  365 * 24 * 3600 * 1000UL;
 
 void rtc_server_recv_notify(EventLoop* /*el*/, IOWatcher* /*w*/,
     int fd, int /*events*/, void* data)
