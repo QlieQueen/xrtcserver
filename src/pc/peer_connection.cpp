@@ -1,6 +1,7 @@
 #include "pc/peer_connection.h"
 #include "pc/session_description.h"
 #include "ice/icg_credentials.h"
+#include "pc/transport_controller.h"
 #include <rtc_base/rtc_certificate.h>
 #include <rtc_base/logging.h>
 
@@ -18,7 +19,10 @@ static RtpDirection get_direction(bool send, bool recv) {
     }
 }
 
-PeerConnection::PeerConnection(EventLoop* el) : _el(el) {
+PeerConnection::PeerConnection(EventLoop* el) :
+        _el(el),
+        _transport_controller(new TransportController(el))      
+{
 
 }
 
@@ -57,7 +61,7 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& options) {
         _local_desc->add_transport_info(video->mid(), ice_param, _certificate);
     }
 
-    if (options.use_rtp_mux) {
+    if (options.use_rtp_mux) { // 所有媒体流复用同一传输通道（ip:port）
         ContentGroup offer_bundle("BUNDLE");
         for (auto content : _local_desc->contents()) {
             offer_bundle.add_content_name(content->mid());
@@ -67,6 +71,8 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& options) {
             _local_desc->add_group(offer_bundle);
         }
     }
+
+    _transport_controller->set_local_description(_local_desc.get());
 
     return _local_desc->to_string();
 }

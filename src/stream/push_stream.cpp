@@ -19,6 +19,7 @@ std::string PushStream::create_offer() {
     options.send_video = false;
     options.recv_audio = _audio;
     options.recv_video = _video;
+    //options.use_rtcp_mux = false;  // rtp和rtcp是否复用的选项
 
     return _pc->create_offer(options);
 }

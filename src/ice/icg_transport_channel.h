@@ -22,6 +22,8 @@ public:
         return _component;
     }
 
+    void gathering_candidate();
+
 private:
     EventLoop* _el;
     std::string _transport_name; // audio video

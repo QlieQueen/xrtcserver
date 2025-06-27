@@ -165,6 +165,32 @@ std::shared_ptr<TransportDescription> SessionDescription::get_transport_info(con
     return nullptr;
 }
 
+bool SessionDescription::is_bundle(const std::string& mid) {
+    auto content_group = get_group_by_name("BUNDLE");
+    if (content_group.empty()) {
+        return false;
+    }
+    
+    for (auto group : content_group) {
+        for (auto name : group->content_names()) {
+            if (name == mid) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+std::string SessionDescription::get_first_bundle_mid() {
+    auto content_group = get_group_by_name("BUNDLE");
+    if (content_group.empty()) {
+        return "";
+    }
+
+    return content_group[0]->content_names()[0];
+}
+
 
 static void add_rtcp_fb_line(std::shared_ptr<CodecInfo> codec,
         std::stringstream& ss)

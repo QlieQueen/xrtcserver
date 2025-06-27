@@ -8,6 +8,7 @@
 
 #include "base/event_loop.h"
 #include "pc/session_description.h"
+#include "pc/transport_controller.h"
 
 
 namespace xrtc {
@@ -18,7 +19,7 @@ struct RTCOfferAnswerOptions {
     bool recv_audio = true;
     bool recv_video = true;
     bool use_rtp_mux = true; // bundle
-    bool use_rtcp_mux = true;
+    bool use_rtcp_mux = true; // rtp和rtcp是否复用同一传输通道的选项
     bool dtls_on = true;
 };
 
@@ -34,6 +35,7 @@ private:
     EventLoop* _el;
     std::unique_ptr<SessionDescription> _local_desc;
     rtc::RTCCertificate* _certificate = nullptr;
+    std::unique_ptr<TransportController> _transport_controller;
 };
 
 } // namespace xrtc

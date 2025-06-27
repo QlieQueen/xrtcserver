@@ -9,6 +9,8 @@
 #define CMDNO_STOPPUSH 4
 #define CMDNO_STOPPULL 5
 
+#include <string>
+
 namespace xrtc {
 
 struct RtcMsg {
