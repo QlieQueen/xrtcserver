@@ -1,13 +1,14 @@
 #include "pc/transport_controller.h"
 #include "ice/ice_agent.h"
 #include "ice/icg_def.h"
+#include "ice/port_allocator.h"
 #include <rtc_base/logging.h>
 
 namespace xrtc {
 
-TransportController::TransportController(EventLoop* el) :
+TransportController::TransportController(EventLoop* el, PortAllocator* allocator) :
         _el(el),
-        _ice_agent(new IceAgent(el))
+        _ice_agent(new IceAgent(el, allocator))
 {
 
 }

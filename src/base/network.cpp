@@ -32,11 +32,11 @@ int NetWorkManager::create_networks() {
         struct sockaddr_in* addr = (struct sockaddr_in*)(cur->ifa_addr);
         rtc::IPAddress ip_address(addr->sin_addr);
 
-        if (rtc::IPIsPrivateNetwork(ip_address) || rtc::IPIsLoopback(ip_address)) {
+        if (rtc::IPIsLoopback(ip_address)) {
             continue;
         }
 
-        NetWork* network = new NetWork(cur->ifa_name, ip_address);
+        Network* network = new Network(cur->ifa_name, ip_address);
 
         RTC_LOG(INFO) << "gathered network interface: " << network->to_string();
 

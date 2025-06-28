@@ -8,13 +8,14 @@
 
 
 #include "base/event_loop.h"
+#include "ice/port_allocator.h"
 #include "pc/peer_connection.h"
 
 namespace xrtc {
 
 class RtcStream {
 public:
-    RtcStream(EventLoop* el, uint64_t uid, const std::string& stream_name,
+    RtcStream(EventLoop* el, PortAllocator* allocator, uint64_t uid, const std::string& stream_name,
         bool audio, bool video, uint32_t log_id);
     
     virtual ~RtcStream();

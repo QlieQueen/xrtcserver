@@ -7,12 +7,13 @@
 #include "ice/icg_def.h"
 #include "base/event_loop.h"
 #include "ice/icg_transport_channel.h"
+#include "ice/port_allocator.h"
 
 namespace xrtc {
 
 class IceAgent {
 public:
-    IceAgent(EventLoop* el);
+    IceAgent(EventLoop* el, PortAllocator* allocator);
     ~IceAgent();
 
     bool create_channel(EventLoop* el, const std::string& transport_name,
@@ -31,6 +32,7 @@ private:
 private:
     EventLoop* _el;
     std::vector<IceTransportChannel*> _channels;
+    PortAllocator* _allocator;
 };
 
 }

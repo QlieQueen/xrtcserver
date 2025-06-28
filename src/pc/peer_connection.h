@@ -7,6 +7,7 @@
 #include <rtc_base/rtc_certificate.h>
 
 #include "base/event_loop.h"
+#include "ice/port_allocator.h"
 #include "pc/session_description.h"
 #include "pc/transport_controller.h"
 
@@ -25,7 +26,7 @@ struct RTCOfferAnswerOptions {
 
 class PeerConnection {
 public:
-    PeerConnection(EventLoop* el);
+    PeerConnection(EventLoop* el, PortAllocator* allocator);
     ~PeerConnection();
 
     int init(rtc::RTCCertificate* certificate);

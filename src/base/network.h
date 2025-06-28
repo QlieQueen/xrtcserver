@@ -6,11 +6,11 @@
 
 namespace xrtc {
 
-class NetWork {
+class Network {
 public:
-    NetWork(const std::string& name, const rtc::IPAddress& ip) :
+    Network(const std::string& name, const rtc::IPAddress& ip) :
         _name(name), _ip(ip) {}
-    ~NetWork() = default;
+    ~Network() = default;
 
     const std::string name() { return _name; }
     const rtc::IPAddress ip() { return _ip; }
@@ -30,11 +30,11 @@ public:
     NetWorkManager();
     ~NetWorkManager();
 
-    const std::vector<NetWork*>& get_networks() { return _network_lists; }
+    const std::vector<Network*>& get_networks() { return _network_lists; }
     int create_networks();
 
 private:
-    std::vector<NetWork*> _network_lists;
+    std::vector<Network*> _network_lists;
 
 };
 

@@ -1,4 +1,5 @@
 #include "pc/peer_connection.h"
+#include "ice/port_allocator.h"
 #include "pc/session_description.h"
 #include "ice/icg_credentials.h"
 #include "pc/transport_controller.h"
@@ -19,9 +20,9 @@ static RtpDirection get_direction(bool send, bool recv) {
     }
 }
 
-PeerConnection::PeerConnection(EventLoop* el) :
+PeerConnection::PeerConnection(EventLoop* el, PortAllocator* allocator) :
         _el(el),
-        _transport_controller(new TransportController(el))      
+        _transport_controller(new TransportController(el, allocator))      
 {
 
 }

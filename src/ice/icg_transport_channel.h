@@ -5,12 +5,14 @@
 
 #include "base/event_loop.h"
 #include "ice/icg_def.h"
+#include "ice/port_allocator.h"
 
 namespace xrtc {
 
 class IceTransportChannel {
 public:
-    IceTransportChannel(EventLoop* el, const std::string transport_name,
+    IceTransportChannel(EventLoop* el, PortAllocator* allocator, 
+            const std::string transport_name,
             IceCandidateComponent component);
     virtual ~IceTransportChannel();
 
@@ -28,6 +30,7 @@ private:
     EventLoop* _el;
     std::string _transport_name; // audio video
     IceCandidateComponent _component;
+    PortAllocator* _allocator;
 };
 
 }

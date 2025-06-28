@@ -84,8 +84,6 @@ static void process_signal(int sig) {
     }
 }
 
-#include "base/network.h"
-
 int main() {
     int ret = init_general_conf("./conf/general.yaml");
     if (ret != 0) {
@@ -97,9 +95,6 @@ int main() {
         return -1;
     }
     g_log->set_log_to_stderr(g_conf->log_to_stderr);
-
-    xrtc::NetWorkManager network_manager;
-    network_manager.create_networks();
 
     // 初始化signaling server
     ret = init_signaling_server();
