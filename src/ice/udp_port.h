@@ -1,6 +1,7 @@
 #ifndef __UDP_PORT_H_
 #define __UDP_PORT_H_
 
+#include <vector>
 #include <string>
 #include <rtc_base/socket_address.h>
 
@@ -29,6 +30,7 @@ private:
     IceParamters _ice_params;
     int _socket = -1;
     rtc::SocketAddress _local_addr;
+    std::vector<Candidate> _candidate;
 };
 
 } // namepsace xrtc

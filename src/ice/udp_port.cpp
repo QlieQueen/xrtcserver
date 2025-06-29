@@ -1,8 +1,12 @@
+#include <sstream>
 #include <rtc_base/logging.h>
+#include <rtc_base/crc32.h>
+#include <string>
 
 #include "ice/udp_port.h"
 #include "base/socket.h"
 #include "base/network.h"
+#include "ice/icg_def.h"
 
 namespace xrtc {
 
@@ -20,6 +24,16 @@ UDPPort::UDPPort(EventLoop* el,
 
 UDPPort::~UDPPort() {
 
+}
+
+std::string compute_foundation(const std::string& type,
+        const std::string& protocol,
+        const std::string& relay_protocol,
+        const rtc::SocketAddress& base)
+{
+    std::stringstream ss;
+    ss << type << base.HostAsURIString() << protocol << relay_protocol;
+    return std::to_string(rtc::ComputeCrc32(ss.str()));
 }
 
 int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port, 
@@ -53,6 +67,18 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
     _local_addr.SetPort(port);
 
     RTC_LOG(LS_INFO) << "prepared socket address: " << _local_addr.ToString();
+
+    c.component = _component;
+    c.protocol = "udp";
+    c.address = _local_addr;
+    c.port = port;
+    c.priority = c.get_priority(ICE_TYPE_PREFERENCE_HOST, 0, 0); // 无3G/WIFI
+    c.username = _ice_params.ice_ufrag;
+    c.password = _ice_params.ice_pwd;
+    c.type = LOCAL_PORT_TYPE;
+    c.foundation = compute_foundation(c.type, c.protocol, "", c.address);
+
+    _candidate.push_back(c);
 
     return 0;
 }
