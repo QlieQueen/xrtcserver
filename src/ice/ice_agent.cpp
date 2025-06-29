@@ -41,6 +41,17 @@ std::vector<IceTransportChannel*>::iterator IceAgent::_get_channel(
         });
 }
 
+void IceAgent::set_ice_params(const std::string& transport_name,
+    IceCandidateComponent component,
+    const IceParamters& ice_params)
+{
+    auto channel = get_channel(transport_name, component);
+    if (channel) {
+        channel->set_ice_params(ice_params);
+    }
+}
+
+
 void IceAgent::gathering_candidate() {
     for (auto channel : _channels) {
         channel->gathering_candidate();

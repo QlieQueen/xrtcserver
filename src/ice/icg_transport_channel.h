@@ -4,6 +4,7 @@
 #include <string>
 
 #include "base/event_loop.h"
+#include "ice/icg_credentials.h"
 #include "ice/icg_def.h"
 #include "ice/port_allocator.h"
 
@@ -24,6 +25,7 @@ public:
         return _component;
     }
 
+    void set_ice_params(const IceParamters& ice_params);
     void gathering_candidate();
 
 private:
@@ -31,6 +33,7 @@ private:
     std::string _transport_name; // audio video
     IceCandidateComponent _component;
     PortAllocator* _allocator;
+    IceParamters _ice_params;
 };
 
 }

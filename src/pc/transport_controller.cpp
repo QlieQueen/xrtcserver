@@ -1,5 +1,6 @@
 #include "pc/transport_controller.h"
 #include "ice/ice_agent.h"
+#include "ice/icg_credentials.h"
 #include "ice/icg_def.h"
 #include "ice/port_allocator.h"
 #include <rtc_base/logging.h>
@@ -32,9 +33,15 @@ int TransportController::set_local_description(SessionDescription* desc) {
         }
 
         _ice_agent->create_channel(_el, mid, IceCandidateComponent::RTP);
+        auto td = desc->get_transport_info(mid);
+        if (td) {
+            _ice_agent->set_ice_params(mid, IceCandidateComponent::RTP, IceParamters(td->ice_ufrag, td->ice_pwd));
+        }
+        /*
         if (!content->rtcp_mux()) {
             _ice_agent->create_channel(_el, mid, IceCandidateComponent::RTCP);
         }
+        */
     }
 
     _ice_agent->gathering_candidate();

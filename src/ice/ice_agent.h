@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 
+#include "ice/icg_credentials.h"
 #include "ice/icg_def.h"
 #include "base/event_loop.h"
 #include "ice/icg_transport_channel.h"
@@ -21,6 +22,9 @@ public:
     IceTransportChannel* get_channel(const std::string& transport_name,
             IceCandidateComponent component);
 
+    void set_ice_params(const std::string& transport_name,
+        IceCandidateComponent component,
+        const IceParamters& ice_params);
     void gathering_candidate();
 
 private:
