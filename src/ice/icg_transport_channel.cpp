@@ -57,7 +57,21 @@ void IceTransportChannel::gathering_candidate() {
     for (auto network : network_list) {
         UDPPort* port = new UDPPort(_el, _transport_name, _component, _ice_params);
         Candidate c;
-        int ret = port->create_ice_candidate(network, c);
+        int ret = port->create_ice_candidate(network, _allocator->min_port(), 
+            _allocator->max_port(), c);
+        if (ret != 0) {
+            continue;
+        }
+    }
+}
+
+void PortAllocator::set_port_range(int min_port, int max_port) {
+    if (min_port > 0) {
+        _min_port = min_port;
+    }
+
+    if (max_port > 0) {
+        _max_port = max_port;
     }
 }
 

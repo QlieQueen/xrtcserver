@@ -25,6 +25,9 @@ int load_general_conf(const char * filename, GeneralConf* conf) {
         conf->log_name = config["log"]["log_name"].as<std::string>();
         conf->log_level = config["log"]["log_level"].as<std::string>();
         conf->log_to_stderr = config["log"]["log_to_stderr"].as<bool>();
+        // ice
+        conf->ice_min_port = config["ice"]["min_port"].as<int>();
+        conf->ice_max_port = config["ice"]["max_port"].as<int>();
     } catch (YAML::Exception &e) {
         fprintf(stderr, "catch a YAML::Excaption, line: %d, column: %d"
             ", error: %s\n", e.mark.line, e.mark.column, e.msg.c_str());

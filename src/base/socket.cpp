@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -58,6 +59,18 @@ int create_tcp_server(const char* addr, int port) {
         RTC_LOG(LS_WARNING) << "listen error, errno:" << errno
             << ", errmsg:" << strerror(errno);
         close(sock); 
+        return -1;
+    }
+
+    return sock;
+}
+
+
+int create_udp_socket(int family) {
+    int sock = socket(family, SOCK_DGRAM, 0);
+    if (sock == -1) {
+        RTC_LOG(LS_WARNING) << "create udp socket error: " << strerror(errno)
+            << ", errno: " << errno;
         return -1;
     }
 
@@ -192,6 +205,49 @@ int sock_write_data(int sock, const char* buf, size_t len) {
         }
     }
     return nwritten;
+}
+
+
+int sock_bind(int sock, struct sockaddr* addr, socklen_t len, int min_port, int max_port) {
+    int ret = -1;
+    if (0 == min_port && 0 == max_port) {
+        // 让操作系统自动选择一个port
+        ret = bind(sock, addr, len);
+    } else {
+        struct sockaddr_in* addr_in = (struct sockaddr_in*)addr;
+        for (int port = min_port; port <= max_port && ret != 0; port++) {
+            addr_in->sin_port = htons(port);
+            ret = bind(sock, addr, len);
+        }
+    }
+
+    if (ret != 0) {
+        RTC_LOG(LS_WARNING) << "bind error: " << strerror(errno) 
+            << ", errno: " << errno;
+    }
+
+    return ret;
+}
+
+int sock_get_address(int sock, char* ip, int* port) {
+    struct sockaddr_in addr_in;
+    socklen_t len = sizeof(struct sockaddr);
+    int ret = getsockname(sock, (struct sockaddr*)&addr_in, &len);
+    if (ret != 0) {
+        RTC_LOG(LS_WARNING) << "getsockname error: " << strerror(errno)
+            << ", errno: " << errno;
+        return -1;
+    }
+
+    if (ip) {
+        memcpy(ip, inet_ntoa(addr_in.sin_addr), sizeof(addr_in.sin_addr));
+    }
+
+    if (port) {
+        *port = ntohs(addr_in.sin_port);
+    }
+
+    return 0;
 }
 
 } // namespace xrtc
