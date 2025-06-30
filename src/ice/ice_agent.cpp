@@ -1,4 +1,7 @@
 #include <algorithm>
+
+#include <rtc_base/logging.h>
+
 #include "ice/ice_agent.h"
 #include "ice/icg_transport_channel.h"
 #include "ice/port_allocator.h"
@@ -25,6 +28,8 @@ bool IceAgent::create_channel(EventLoop* el, const std::string& transport_name,
     }
     
     auto channel = new IceTransportChannel(el, _allocator, transport_name, component);
+    channel->signal_candidate_allocate_done.connect(this, 
+        &IceAgent::on_candidate_allocate_done);
     _channels.push_back(channel);
 
     return true;
@@ -56,6 +61,14 @@ void IceAgent::gathering_candidate() {
     for (auto channel : _channels) {
         channel->gathering_candidate();
     }
+}
+
+
+void IceAgent::on_candidate_allocate_done(IceTransportChannel* channel, 
+        const std::vector<Candidate>& candidates)
+{
+    signal_candidate_allocate_done(this, channel->transport_name(),
+        channel->component(), candidates);
 }
 
 } // namespace xrtc

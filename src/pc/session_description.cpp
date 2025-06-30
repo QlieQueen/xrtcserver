@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "pc/session_description.h"
+#include "ice/icg_credentials.h"
 #include "pc/codec_info.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/ssl_fingerprint.h"
@@ -90,6 +91,16 @@ SessionDescription::~SessionDescription() {
 
 }
 
+
+std::shared_ptr<MediaContentDescription> SessionDescription::get_content(const std::string& mid) {
+    for (auto content : _contents) {
+        if (mid == content->mid()) {
+            return content;
+        }
+    }
+
+    return nullptr;
+}
 
 void SessionDescription::add_content(std::shared_ptr<MediaContentDescription> content) {
     _contents.push_back(content);
@@ -261,6 +272,21 @@ static void build_rtp_direction(std::shared_ptr<MediaContentDescription> content
     } 
 }
 
+static void build_candidates(std::shared_ptr<MediaContentDescription> content,
+        std::stringstream& ss)
+{
+    for (auto c : content->candidates()) {
+        ss << "a=candidate:" << c.foundation
+           << " " << c.component
+           << " " << c.protocol
+           << " " << c.priority
+           << " " << c.address.HostAsURIString()
+           << " " << c.port
+           << " typ " << c.type
+           << "\r\n";
+    }
+}
+
 std::string SessionDescription::to_string() {
     std::stringstream ss;
 
@@ -305,6 +331,8 @@ std::string SessionDescription::to_string() {
 
         ss << "c=IN IP4 0.0.0.0\r\n";
         ss << "a=rtcp:9 IN IP4 0.0.0.0\r\n";
+
+        build_candidates(content, ss);
 
         auto transport_info = get_transport_info(content->mid());
         if (transport_info) {

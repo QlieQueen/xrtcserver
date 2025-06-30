@@ -11,11 +11,20 @@ TransportController::TransportController(EventLoop* el, PortAllocator* allocator
         _el(el),
         _ice_agent(new IceAgent(el, allocator))
 {
-
+    _ice_agent->signal_candidate_allocate_done.connect(this, 
+            &TransportController::on_candidate_allocate_done);
 }
 
 TransportController::~TransportController() {
 
+}
+
+void TransportController::on_candidate_allocate_done(IceAgent* /*agent*/, 
+            const std::string& transport_name,
+            IceCandidateComponent component,
+            const std::vector<Candidate>& candidates)
+{
+    signal_candidate_allocate_done(this, transport_name, component, candidates);
 }
 
 

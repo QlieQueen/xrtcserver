@@ -13,6 +13,8 @@ public:
         int network_adapter_preference,
         int relay_preference);
 
+    std::string to_string() const;
+
 public:
     IceCandidateComponent component;
     std::string protocol;

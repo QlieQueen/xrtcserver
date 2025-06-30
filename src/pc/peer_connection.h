@@ -7,9 +7,12 @@
 #include <rtc_base/rtc_certificate.h>
 
 #include "base/event_loop.h"
+#include "ice/candidate.h"
+#include "ice/icg_def.h"
 #include "ice/port_allocator.h"
 #include "pc/session_description.h"
 #include "pc/transport_controller.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
 
 
 namespace xrtc {
@@ -24,13 +27,18 @@ struct RTCOfferAnswerOptions {
     bool dtls_on = true;
 };
 
-class PeerConnection {
+class PeerConnection : public sigslot::has_slots<> {
 public:
     PeerConnection(EventLoop* el, PortAllocator* allocator);
     ~PeerConnection();
 
     int init(rtc::RTCCertificate* certificate);
     std::string create_offer(const RTCOfferAnswerOptions& options);
+private:
+    void on_candidate_allocate_done(TransportController* transport_controller,
+            const std::string& transport_name,
+            IceCandidateComponent component,
+            const std::vector<Candidate>& candidates);
 
 private:
     EventLoop* _el;

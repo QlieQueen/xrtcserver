@@ -1,3 +1,4 @@
+#include <sstream>
 #include "ice/candidate.h"
 
 namespace xrtc {
@@ -22,6 +23,15 @@ uint32_t Candidate::get_priority(uint32_t type_preference,
     int addr_ref = rtc::IPAddressPrecedence(address.ipaddr()) + relay_preference;
     int local_pref = (network_adapter_preference << 8 | addr_ref);
     return (type_preference << 24) | (local_pref << 8) | (256 - (int)component);
+}
+
+
+std::string Candidate::to_string() const {
+    std::stringstream ss;
+    ss << "Candidate[" << foundation << ":" << (int)component << ":" << protocol
+        << ":" << priority << ":" << address.ToString() << ":" << type
+        << ":" << username << ":" << password;
+    return ss.str();
 }
 
 

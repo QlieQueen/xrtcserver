@@ -6,9 +6,10 @@
 #include <string>
 
 #include <rtc_base/ssl_fingerprint.h>
+#include "rtc_base/rtc_certificate.h"
+#include "ice/candidate.h"
 #include "ice/icg_credentials.h"
 #include "pc/codec_info.h"
-#include "rtc_base/rtc_certificate.h"
 
 namespace xrtc {
 
@@ -46,10 +47,16 @@ public:
     bool rtcp_mux() { return _rtcp_mux; }
     void set_rtcp_mux(bool mux) { _rtcp_mux = mux; }
 
+    const std::vector<Candidate>& candidates() { return _candidates; }
+    void add_candidates(const std::vector<Candidate>& candidates) {
+        _candidates = candidates;
+    }
+
 protected:
     std::vector<std::shared_ptr<CodecInfo>> _codecs;
     RtpDirection _direction;
     bool _rtcp_mux = true;
+    std::vector<Candidate> _candidates;
 };
 
 class AudioContentDescription : public MediaContentDescription {
@@ -104,6 +111,7 @@ public:
     SessionDescription(SdpType type);
     ~SessionDescription();
 
+    std::shared_ptr<MediaContentDescription> get_content(const std::string& mid);
     void add_content(std::shared_ptr<MediaContentDescription> content);
     const std::vector<std::shared_ptr<MediaContentDescription>>& contents() const {
         return _contents;

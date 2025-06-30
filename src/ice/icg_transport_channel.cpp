@@ -62,7 +62,11 @@ void IceTransportChannel::gathering_candidate() {
         if (ret != 0) {
             continue;
         }
+
+        _local_candidates.push_back(c);
     }
+
+    signal_candidate_allocate_done(this, _local_candidates);
 }
 
 void PortAllocator::set_port_range(int min_port, int max_port) {
