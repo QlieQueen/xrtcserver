@@ -3,6 +3,7 @@
 #include <rtc_base/zmalloc.h>
 #include <rtc_base/logging.h>
 
+#include "base/xhead.h"
 #include "xrtc_server_def.h"
 #include "base/socket.h"
 #include "server/rtc_server.h"
@@ -293,6 +294,7 @@ int SignalingWorker::_process_request(TcpConnection* c,
 
     xhead_t* xh = (xhead_t*)(header.data());
 
+    int ret = 0;
     int cmdno;
     json root;
     try {
@@ -308,14 +310,44 @@ int SignalingWorker::_process_request(TcpConnection* c,
         return -1;
     }
 
+    
     switch(cmdno) {
         case CMDNO_PUSH:
             return _process_push(cmdno, c, root, xh->log_id);
-        break;
+            break;
+
+        case CMDNO_ANSWER:
+            ret = _process_answer(cmdno, c, root, xh->log_id);
+            break;
 
         default:
-        break;
+            ret = -1;
+            RTC_LOG(LS_WARNING) << "unknown cmdno: " << cmdno << ", log_id: " << xh->log_id;
+            break;
     }
+
+    // 返回处理结果
+    char* buf = (char*)zmalloc(XHEAD_SIZE + MAX_RES_BUF);
+    xhead_t* res_xh = (xhead_t*)buf;
+    memcpy(res_xh, header.data(), header.size());
+
+    json res_root;
+    if (0 ==ret) {
+        res_root["err_no"] = 0;
+        res_root["err_msg"] = "success";
+    } else {
+        res_root["err_no"] = -1;
+        res_root["err_msg"] = "process error";
+    }
+
+    std::string json_data = res_root.dump();
+    RTC_LOG(LS_INFO) << "response body: " << json_data;
+
+    res_xh->body_len = json_data.size();
+    snprintf(buf + XHEAD_SIZE, MAX_RES_BUF, "%s", json_data.c_str());
+
+    rtc::Slice reply(buf, XHEAD_SIZE + res_xh->body_len);
+    _add_reply(c, reply);
 
     return 0;
 }
@@ -361,6 +393,49 @@ int SignalingWorker::_process_push(int cmdno, TcpConnection* c,
 
     return g_rtc_server->send_rtc_msg(msg);
 }
+
+
+int SignalingWorker::_process_answer(int cmdno, TcpConnection* c, 
+    const json& root, uint32_t log_id) 
+{
+    uint64_t uid;
+    std::string stream_name;
+    std::string answer;
+    std::string stream_type;
+
+    try {
+        uid = root.at("uid");
+        stream_name = root.at("stream_name");
+        answer = root.at("answer");
+        stream_type = root.at("type");
+
+    } catch (const json::out_of_range& e) {
+        RTC_LOG(LS_WARNING) << "parse error: " << e.what()
+            << ", fd: " << c->fd
+            << ", log_id: " << log_id;
+        return -1;
+    }
+
+    RTC_LOG(LS_INFO) << "cmdno[" << cmdno
+        << "] uid[" << uid
+        << "] stream_name[" << stream_name
+        << "] answer[" << answer
+        << "] stream_type[" << stream_type
+        << "] signaling server send answer request";
+
+    std::shared_ptr<RtcMsg> msg = std::make_shared<RtcMsg>();
+    msg->cmdno = cmdno;
+    msg->uid = uid;
+    msg->stream_name = stream_name;
+    msg->sdp = answer;
+    msg->stream_type = stream_type;
+    msg->log_id = log_id;
+
+    return g_rtc_server->send_rtc_msg(msg);
+}
+
+
+
 
 void SignalingWorker::_response_server_offer(std::shared_ptr<RtcMsg> msg) {
     TcpConnection* c = (TcpConnection*)msg->conn;

@@ -21,8 +21,11 @@ public:
     virtual ~RtcStream();
 
     int start(rtc::RTCCertificate* certificate);
+    int set_remote_sdp(const std::string& sdp);
 
     virtual std::string create_offer() = 0;
+
+    uint64_t uid() { return _uid; }
 
 protected:
     EventLoop* _el;

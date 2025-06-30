@@ -99,5 +99,12 @@ std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& options) {
     return _local_desc->to_string();
 }
 
+
+int PeerConnection::set_remote_sdp(const std::string& sdp) {
+    RTC_LOG(LS_WARNING) << "=============pc set remote sdp";
+    return 0;
+}
+
+
 } // namespace xrtc
 

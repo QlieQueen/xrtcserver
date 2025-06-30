@@ -23,7 +23,11 @@ public:
         bool audio, bool video, uint32_t log_id,
         rtc::RTCCertificate* certificate,
         std::string& offer);
-    
+
+    int set_answer(uint64_t uid, const std::string& stream_name, 
+        const std::string& answer, const std::string& stream_type,
+        uint32_t log_id);
+
     PushStream* find_push_stream(const std::string& stream_name);
 
 private:
