@@ -8,7 +8,7 @@
 
 #include "base/event_loop.h"
 #include "ice/candidate.h"
-#include "ice/icg_def.h"
+#include "ice/ice_def.h"
 #include "ice/port_allocator.h"
 #include "pc/session_description.h"
 #include "pc/transport_controller.h"

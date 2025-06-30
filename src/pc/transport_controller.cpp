@@ -1,7 +1,7 @@
 #include "pc/transport_controller.h"
 #include "ice/ice_agent.h"
-#include "ice/icg_credentials.h"
-#include "ice/icg_def.h"
+#include "ice/ice_credentials.h"
+#include "ice/ice_def.h"
 #include "ice/port_allocator.h"
 #include <rtc_base/logging.h>
 

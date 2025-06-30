@@ -5,10 +5,9 @@
 #include <string>
 
 #include "ice/candidate.h"
-#include "ice/icg_credentials.h"
-#include "ice/icg_def.h"
+#include "ice/ice_credentials.h"
 #include "base/event_loop.h"
-#include "ice/icg_transport_channel.h"
+#include "ice/ice_transport_channel.h"
 #include "ice/port_allocator.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 

@@ -8,7 +8,7 @@
 #include <rtc_base/ssl_fingerprint.h>
 #include "rtc_base/rtc_certificate.h"
 #include "ice/candidate.h"
-#include "ice/icg_credentials.h"
+#include "ice/ice_credentials.h"
 #include "pc/codec_info.h"
 
 namespace xrtc {
@@ -119,7 +119,7 @@ public:
     void add_group(const ContentGroup& group);
     std::vector<const ContentGroup*> get_group_by_name(const std::string& name) const;
 
-    bool add_transport_info(const std::string& mid, const IceParamters& icg_param,
+    bool add_transport_info(const std::string& mid, const IceParamters& ice_param,
         rtc::RTCCertificate* certificate);
     std::shared_ptr<TransportDescription> get_transport_info(const std::string& mid);
 

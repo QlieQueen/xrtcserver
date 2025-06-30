@@ -1,7 +1,7 @@
 #include "pc/peer_connection.h"
 #include "ice/port_allocator.h"
 #include "pc/session_description.h"
-#include "ice/icg_credentials.h"
+#include "ice/ice_credentials.h"
 #include "pc/transport_controller.h"
 #include <rtc_base/rtc_certificate.h>
 #include <rtc_base/logging.h>
@@ -47,8 +47,9 @@ void PeerConnection::on_candidate_allocate_done(TransportController* transport_c
     }
 
     auto content = _local_desc->get_content(transport_name);
-    content->add_candidates(candidates);
-
+    if (content) {
+        content->add_candidates(candidates);
+    }
 }
 
 int PeerConnection::init(rtc::RTCCertificate* certificate) {

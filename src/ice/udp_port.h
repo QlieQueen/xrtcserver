@@ -7,8 +7,8 @@
 
 #include "base/event_loop.h"
 #include "base/network.h"
-#include "ice/icg_credentials.h"
-#include "ice/icg_def.h"
+#include "ice/ice_credentials.h"
+#include "ice/ice_def.h"
 #include "ice/candidate.h"
 
 namespace xrtc {

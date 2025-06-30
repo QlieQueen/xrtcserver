@@ -2,7 +2,7 @@
 #define __ICE_CANDIDATE_H_
 
 #include <string>
-#include "ice/icg_def.h"
+#include "ice/ice_def.h"
 #include <rtc_base/socket_address.h>
 
 namespace xrtc {

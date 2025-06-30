@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "pc/session_description.h"
-#include "ice/icg_credentials.h"
+#include "ice/ice_credentials.h"
 #include "pc/codec_info.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/ssl_fingerprint.h"
@@ -49,7 +49,7 @@ VideoContentDescription::VideoContentDescription() {
     // add codec param
     codec->codec_param["level-asymmetry-allowed"] = "1";
     codec->codec_param["packetization-mode"] = "1";
-    codec->codec_param["profile-level-id"] = "42e01";
+    codec->codec_param["profile-level-id"] = "42e01f";
 
 
     _codecs.push_back(codec);
@@ -141,13 +141,13 @@ static std::string connection_role_to_string(ConnectionRole role) {
 
 
 bool SessionDescription::add_transport_info(const std::string& mid, 
-        const IceParamters& icg_param, 
+        const IceParamters& ice_param, 
         rtc::RTCCertificate* certificate) 
 {
     auto tdesc = std::make_shared<TransportDescription>();
     tdesc->mid = mid;
-    tdesc->ice_ufrag = icg_param.ice_ufrag;
-    tdesc->ice_pwd = icg_param.ice_pwd;
+    tdesc->ice_ufrag = ice_param.ice_ufrag;
+    tdesc->ice_pwd = ice_param.ice_pwd;
     if (certificate) {
         tdesc->identity_fingerprint = rtc::SSLFingerprint::CreateFromCertificate(*certificate);
         if (!tdesc->identity_fingerprint) {

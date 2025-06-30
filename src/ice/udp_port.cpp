@@ -6,7 +6,7 @@
 #include "ice/udp_port.h"
 #include "base/socket.h"
 #include "base/network.h"
-#include "ice/icg_def.h"
+#include "ice/ice_def.h"
 
 namespace xrtc {
 

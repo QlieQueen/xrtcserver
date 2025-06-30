@@ -3,7 +3,7 @@
 #include <rtc_base/logging.h>
 
 #include "ice/ice_agent.h"
-#include "ice/icg_transport_channel.h"
+#include "ice/ice_transport_channel.h"
 #include "ice/port_allocator.h"
 
 namespace xrtc {
