@@ -1,9 +1,12 @@
+#include <memory>
+#include <netinet/in.h>
 #include <sstream>
 #include <rtc_base/logging.h>
 #include <rtc_base/crc32.h>
 #include <string>
 
 #include "ice/udp_port.h"
+#include "base/async_udp_socket.h"
 #include "base/socket.h"
 #include "base/network.h"
 #include "ice/ice_def.h"
@@ -50,7 +53,9 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
 
     sockaddr_in addr_in;
     addr_in.sin_family = network->ip().family();
-    addr_in.sin_addr = network->ip().ipv4_address();
+    // 因为目前network里是强制填写公网IP，当bind的IP地址不是本地的地址时，会报错（errno：99）。
+    //addr_in.sin_addr = network->ip().ipv4_address();
+    addr_in.sin_addr.s_addr = INADDR_ANY;
 
     if (sock_bind(_socket, (struct sockaddr*)&addr_in, sizeof(sockaddr), 
             min_port, max_port))
@@ -65,6 +70,11 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
 
     _local_addr.SetIP(network->ip());
     _local_addr.SetPort(port);
+
+
+    _async_socket = std::make_unique<AsyncUdpSocket>(_el, _socket);
+    _async_socket->signal_read_packet.connect(this, 
+            &UDPPort::_on_read_packet);
 
     RTC_LOG(LS_INFO) << "prepared socket address: " << _local_addr.ToString();
 
@@ -83,4 +93,9 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
     return 0;
 }
 
+void UDPPort::_on_read_packet(AsyncUdpSocket* socket, char* buf, size_t size,
+        const rtc::SocketAddress& addr, int64_t ts)
+{
+    RTC_LOG(LS_WARNING) << "================remote addr: " << addr.ToString();
+}
 } // namespace xrtc
