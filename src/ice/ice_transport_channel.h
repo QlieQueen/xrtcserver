@@ -30,6 +30,7 @@ public:
     }
 
     void set_ice_params(const IceParamters& ice_params);
+    void set_remote_ice_params(const IceParamters& ice_params);
     void gathering_candidate();
 
 public:
@@ -42,6 +43,7 @@ private:
     IceCandidateComponent _component;
     PortAllocator* _allocator;
     IceParamters _ice_params;
+    IceParamters _remote_ice_params;
     std::vector<Candidate> _local_candidates;
 };
 

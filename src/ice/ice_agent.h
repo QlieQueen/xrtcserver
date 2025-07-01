@@ -26,6 +26,10 @@ public:
     void set_ice_params(const std::string& transport_name,
         IceCandidateComponent component,
         const IceParamters& ice_params);
+    void set_remote_ice_params(const std::string& transport_name,
+        IceCandidateComponent component,
+        const IceParamters& ice_params);
+
     void gathering_candidate();
 
     void on_candidate_allocate_done(IceTransportChannel*, 

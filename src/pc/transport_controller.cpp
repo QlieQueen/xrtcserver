@@ -3,6 +3,7 @@
 #include "ice/ice_credentials.h"
 #include "ice/ice_def.h"
 #include "ice/port_allocator.h"
+#include "pc/session_description.h"
 #include <rtc_base/logging.h>
 
 namespace xrtc {
@@ -54,6 +55,29 @@ int TransportController::set_local_description(SessionDescription* desc) {
     }
 
     _ice_agent->gathering_candidate();
+
+    return 0;
+}
+
+int TransportController::set_remote_description(SessionDescription* desc) {
+    if (!desc) {
+        return -1;
+    }
+
+    for (auto content : desc->contents()) {
+        std::string mid = content->mid();
+        if (desc->is_bundle(mid) && mid != desc->get_first_bundle_mid()) {
+            continue;
+        }
+
+        auto td = desc->get_transport_info(mid);
+        if (td) {
+            _ice_agent->set_remote_ice_params(content->mid(), IceCandidateComponent::RTP,
+                    IceParamters(td->ice_ufrag, td->ice_pwd));
+
+        }
+
+    }
 
     return 0;
 }

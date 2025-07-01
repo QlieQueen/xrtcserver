@@ -80,6 +80,8 @@ int RtcStreamManager::set_answer(uint64_t uid, const std::string& stream_name,
     } else if ("pull" == stream_type) {
 
     }
+
+    return 0;
 }
 
 

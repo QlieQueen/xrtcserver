@@ -5,6 +5,7 @@
 #include "pc/peer_connection.h"
 #include "ice/ice_credentials.h"
 #include "pc/session_description.h"
+#include "rtc_base/string_encode.h"
 
 
 namespace xrtc {
@@ -174,12 +175,29 @@ int PeerConnection::set_remote_sdp(const std::string& sdp) {
     _remote_desc = std::make_unique<SessionDescription>(SdpType::k_answer);
     std::string media_type;
 
+    auto audio_content = std::make_shared<AudioContentDescription>();
+    auto video_content = std::make_shared<VideoContentDescription>();
+
     auto audio_td = std::make_shared<TransportDescription>();
     auto video_td = std::make_shared<TransportDescription>();
 
 
     for (auto field : fields) {
-        if (field.find("m=") != std::string::npos) {
+        if (field.find("m=group:BUNDLE") != std::string::npos) {
+            std::vector<std::string> items;
+            if (is_rn) {
+                field = field.substr(0, field.length() - 1);
+            }
+            rtc::split(field, ' ', &items);
+            if (items.size() > 1) {
+                ContentGroup answer_bundle("BUNDLE");
+                for (size_t i = 1; i < items.size(); i++) {
+                    answer_bundle.add_content_name(items[i]);
+                }
+                _remote_desc->add_group(answer_bundle);
+            }
+
+        } else if (field.find("m=") != std::string::npos) {
             std::vector<std::string> items;
             rtc::split(field, ' ', &items);
             if (items.size() <= 2) {
@@ -190,8 +208,10 @@ int PeerConnection::set_remote_sdp(const std::string& sdp) {
             // m=audio/video
             media_type = items[0].substr(2);
             if ("audio" == media_type) {
+                _remote_desc->add_content(audio_content);
                 audio_td->mid = "audio";
             } else if ("video" == media_type) {
+                _remote_desc->add_content(video_content);
                 video_td->mid = "video";
             }
         }
@@ -211,6 +231,8 @@ int PeerConnection::set_remote_sdp(const std::string& sdp) {
 
     _remote_desc->add_transport_info(audio_td);
     _remote_desc->add_transport_info(video_td);
+
+    _transport_controller->set_remote_description(_remote_desc.get());
 
     return 0;
 }

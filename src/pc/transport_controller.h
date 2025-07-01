@@ -16,6 +16,7 @@ public:
     ~TransportController();
 
     int set_local_description(SessionDescription* desc);
+    int set_remote_description(SessionDescription* desc);
 
 public:
     sigslot::signal4<TransportController*, const std::string&, IceCandidateComponent,
