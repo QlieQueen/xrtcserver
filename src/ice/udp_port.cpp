@@ -104,12 +104,18 @@ void UDPPort::_on_read_packet(AsyncUdpSocket* socket, char* buf, size_t size,
 
 }
 
-bool UDPPort::get_stun_message(const char* buf, size_t len,
+bool UDPPort::get_stun_message(const char* data, size_t len,
         std::unique_ptr<StunMessage>* out_msg)
 {
-    if (!StunMessage::validate_fingerprint(buf, len)) {
+    if (!StunMessage::validate_fingerprint(data, len)) {
         return false;
-    }    
+    }
+
+    std::unique_ptr<StunMessage> stun_msg = std::make_unique<StunMessage>();
+    rtc::ByteBufferReader buf(data, len);
+    if (!stun_msg->read(&buf) || buf.Length() != 0) {
+        return false;
+    }
 
     return true;
 }
