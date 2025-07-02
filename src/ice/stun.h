@@ -18,22 +18,54 @@ const size_t k_stun_transaction_id_length = 12;  // Transaction Id的长度 96�
 const uint32_t k_stun_magic_cookie = 0x2112A442; // magic cookie的固定取值 0x2112A442
 const size_t k_stun_magic_cookie_length = sizeof(k_stun_magic_cookie); // magic cookie的长度
 
-enum StunAttrbuteValue {
+// stun协议的消息类型，如 Binding Request、Binding Response
+enum StunMessageType {
+    STUN_BINDING_REQUEST = 0x0001,
+
+};
+
+// stun协议中消息携带的属性的属性类型，如Binding Request消息携带了多个属性
+// USERNAME          -- 0x0006
+// PRIORITY          -- 0x0024
+// MESSAGE_INTEGRIT  -- 0x0008
+// FINGERPRINT       -- 0x8028
+enum StunAttrbuteType {
+    STUN_ATTR_USERNAME = 0x0006,
+    STUN_ATTR_MESSAGE_INTEGRITY = 0x0008,
     STUN_ATTR_FINGERPRINT = 0x8028,
 };
 
+// 对属性中的value进行分类
+// 比如：
+//     FINGERPRIN: 存储的是uin32_t的值，所以定义其类型为：STUN_VALUE_UINT32
+//     STUN_ATTR_USERNAME: 存储的是字符串类型，所以定义其类型为: STUN_VALUE_BYTE_STRING
+enum StunAttributeValueType {
+    STUN_VALUE_UNKNOWN = 0,
+    STUN_VALUE_UINT32,
+    STUN_VALUE_BYTE_STRING,
+};
+
 class StunAttribute;
+class StunByteStringAttribute;
 
 class StunMessage {
 public:
     StunMessage();
     ~StunMessage();
 
+    int type() { return _type; }
+    size_t length() { return _length; }
+
     static bool validate_fingerprint(const char* data, size_t len);
+    StunAttributeValueType get_attribute_value_type(int type);
     bool read(rtc::ByteBufferReader* buf);
 
+    const StunByteStringAttribute* get_byte_string(uint16_t type);
+
 private:
-    std::unique_ptr<StunAttribute> _create_attribute(uint16_t type, uint16_t length);
+    StunAttribute* _create_attribute(uint16_t type, uint16_t length);
+    const StunAttribute* _get_attribute(uint16_t type);
+
 
 private:
     uint16_t _type;
@@ -45,10 +77,18 @@ private:
 
 class StunAttribute {
 public:
-    StunAttribute(uint16_t type, uint16_t length);
     virtual ~StunAttribute(); // 声明为虚函数，实现父类析构函数调用子类的析构函数，回收子类资源
 
+    int type() { return _type; }
+    size_t length() { return _length; }
+
+    static StunAttribute* create(StunAttributeValueType value_type,
+            uint16_t type, uint16_t length, void* owner);
     virtual bool read(rtc::ByteBufferReader* buf) = 0;
+
+protected:
+    StunAttribute(uint16_t type, uint16_t length);
+    void consume_padding(rtc::ByteBufferReader* buf);
 
 private:
     uint16_t _type;
@@ -59,6 +99,17 @@ private:
 class StunUInt32Attribute : public StunAttribute {
 public:
     static const size_t SIZE = 4;
+};
+
+class StunByteStringAttribute : public StunAttribute {
+public:
+    StunByteStringAttribute(uint16_t type, uint16_t length);
+    ~StunByteStringAttribute() override;
+
+    bool read(rtc::ByteBufferReader* buf) override;
+
+private:
+    char* _bytes = nullptr;
 };
 
 
