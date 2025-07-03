@@ -221,6 +221,7 @@ bool StunByteStringAttribute::read(rtc::ByteBufferReader* buf) {
     // 消费属性的value的填充字节
     consume_padding(buf);
 
+    return true;
 }
  
 
