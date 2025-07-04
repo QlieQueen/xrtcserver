@@ -11,12 +11,13 @@
 
 namespace xrtc {
 
-const size_t k_stun_head_size = 20;
+const size_t k_stun_header_size = 20;
 const size_t k_stun_attribute_header_size = 4;   // 属性的type + length的长度（也是value在属性开始的偏移量）
 const size_t k_stun_transaction_id_offset = 8;   // Transaction Id距离头部的偏移量
 const size_t k_stun_transaction_id_length = 12;  // Transaction Id的长度 96位
 const uint32_t k_stun_magic_cookie = 0x2112A442; // magic cookie的固定取值 0x2112A442
 const size_t k_stun_magic_cookie_length = sizeof(k_stun_magic_cookie); // magic cookie的长度
+const size_t k_stun_message_integrity_size = 20;
 
 // stun协议的消息类型，如 Binding Request、Binding Response
 enum StunMessageType {
@@ -50,6 +51,12 @@ class StunByteStringAttribute;
 
 class StunMessage {
 public:
+    enum class IntegrityStatus {
+        k_not_set,
+        k_no_integrity,
+        k_integrity_ok,
+        k_integrity_bad,
+    };
     StunMessage();
     ~StunMessage();
 
@@ -57,6 +64,7 @@ public:
     size_t length() { return _length; }
 
     static bool validate_fingerprint(const char* data, size_t len);
+    IntegrityStatus validate_message_integrity(const std::string& password);
     StunAttributeValueType get_attribute_value_type(int type);
     bool read(rtc::ByteBufferReader* buf);
 
@@ -65,13 +73,18 @@ public:
 private:
     StunAttribute* _create_attribute(uint16_t type, uint16_t length);
     const StunAttribute* _get_attribute(uint16_t type);
-
+    bool _validate_message_integrity_of_type(uint16_t mi_attr_type,
+        size_t mi_attr_size, const char* data, size_t size,
+        const std::string& password);
 
 private:
     uint16_t _type;
     uint16_t _length;  // 不包含头部的长度（属性的长度）
     std::string _transaction_id;
     std::vector<std::unique_ptr<StunAttribute>> _attrs;
+    IntegrityStatus _integrity = IntegrityStatus::k_not_set;
+    std::string _password;
+    std::string _buffer;
 };
 
 
