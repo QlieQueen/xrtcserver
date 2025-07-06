@@ -135,7 +135,7 @@ bool StunMessage::_validate_message_integrity_of_type(uint16_t mi_attr_type,
     if (size > current_pos + k_stun_attribute_header_size + mi_attr_size) {
         size_t extra_pos = mi_pos + k_stun_attribute_header_size + mi_attr_size;
         size_t extra_size = size - extra_pos;
-        size_t adjust_new_len = size - extra_size - k_stun_attribute_header_size;
+        size_t adjust_new_len = size - extra_size - k_stun_header_size;
         rtc::SetBE16(temp_data.get() + 2, adjust_new_len);
     }
 
@@ -147,7 +147,7 @@ bool StunMessage::_validate_message_integrity_of_type(uint16_t mi_attr_type,
         return false;
     }
 
-    return memcmp(data + mi_pos + k_stun_attribute_header_size, hmac, k_stun_message_integrity_size)
+    return memcmp(data + mi_pos + k_stun_attribute_header_size, hmac, mi_attr_size)
         == 0;
 }
 
@@ -242,14 +242,19 @@ StunAttributeValueType StunMessage::get_attribute_value_type(int type) {
             return STUN_VALUE_BYTE_STRING;
         case STUN_ATTR_MESSAGE_INTEGRITY:
             return STUN_VALUE_BYTE_STRING;
+        case STUN_ATTR_PRIORITY:
+            return STUN_VALUE_UINT32;
         default:
             return STUN_VALUE_UNKNOWN;
     }
 }
 
-
 const StunByteStringAttribute* StunMessage::get_byte_string(uint16_t type) {
     return static_cast<const StunByteStringAttribute*>(_get_attribute(type));
+}
+
+const StunUInt32Attribute* StunMessage::get_uint32_t(uint16_t type) {
+    return static_cast<const StunUInt32Attribute*>(_get_attribute(type));
 }
 
 const StunAttribute* StunMessage::_get_attribute(uint16_t type) {
@@ -287,6 +292,8 @@ StunAttribute* StunAttribute::create(StunAttributeValueType value_type,
     switch (value_type) {
         case STUN_VALUE_BYTE_STRING:
             return new StunByteStringAttribute(type, length);
+        case STUN_VALUE_UINT32:
+            return new StunUInt32Attribute(type);
         default:
             return nullptr;
     }
@@ -299,6 +306,22 @@ void StunAttribute::consume_padding(rtc::ByteBufferReader* buf) {
     }
 }
 
+
+//UInt32
+StunUInt32Attribute::StunUInt32Attribute(uint16_t type) :
+    StunAttribute(type, SIZE), _bits(0) {}
+
+StunUInt32Attribute::StunUInt32Attribute(uint16_t type, uint32_t value) :
+    StunAttribute(type, SIZE), _bits(value) {}
+
+bool StunUInt32Attribute::read(rtc::ByteBufferReader* buf) {
+    if (length() != SIZE || !buf->ReadUInt32(&_bits)) {
+        return false;
+    } 
+    return true;
+}
+
+// ByteString
 StunByteStringAttribute::StunByteStringAttribute(uint16_t type, uint16_t length) :
     StunAttribute(type, length) {}
 

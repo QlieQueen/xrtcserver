@@ -32,6 +32,7 @@ enum StunMessageType {
 // FINGERPRINT       -- 0x8028
 enum StunAttrbuteType {
     STUN_ATTR_USERNAME = 0x0006,
+    STUN_ATTR_PRIORITY = 0x0024,
     STUN_ATTR_MESSAGE_INTEGRITY = 0x0008,
     STUN_ATTR_FINGERPRINT = 0x8028,
 };
@@ -56,6 +57,7 @@ enum StunAttributeValueType {
 };
 
 class StunAttribute;
+class StunUInt32Attribute;
 class StunByteStringAttribute;
 
 std::string stun_method_to_string(int type);
@@ -71,8 +73,9 @@ public:
     StunMessage();
     ~StunMessage();
 
-    int type() { return _type; }
-    size_t length() { return _length; }
+    int type() const { return _type; }
+    size_t length() const { return _length; }
+    const std::string& transaction_id() const { return _transaction_id; }
 
     static bool validate_fingerprint(const char* data, size_t len);
     IntegrityStatus validate_message_integrity(const std::string& password);
@@ -80,6 +83,7 @@ public:
     bool read(rtc::ByteBufferReader* buf);
 
     const StunByteStringAttribute* get_byte_string(uint16_t type);
+    const StunUInt32Attribute* get_uint32_t(uint16_t type);
 
 private:
     StunAttribute* _create_attribute(uint16_t type, uint16_t length);
@@ -123,6 +127,15 @@ private:
 class StunUInt32Attribute : public StunAttribute {
 public:
     static const size_t SIZE = 4;
+    StunUInt32Attribute(uint16_t type);
+    StunUInt32Attribute(uint16_t type, uint32_t value);
+    ~StunUInt32Attribute() override {}
+
+    uint32_t value() const { return _bits; }
+    bool read(rtc::ByteBufferReader* buf) override;
+
+private:
+    uint32_t _bits;
 };
 
 class StunByteStringAttribute : public StunAttribute {

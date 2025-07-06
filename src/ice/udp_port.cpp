@@ -102,8 +102,17 @@ void UDPPort::_on_read_packet(AsyncUdpSocket* socket, char* buf, size_t size,
     std::unique_ptr<StunMessage> stun_msg;
     std::string remote_ufrag;
     bool res = get_stun_message(buf, size, addr, &stun_msg, &remote_ufrag);
+    if (!res || !stun_msg) {
+        return;
+    }
 
-    RTC_LOG(LS_WARNING) << "============res: " << res;
+    if (STUN_BINDING_REQUEST == stun_msg->type()) {
+        RTC_LOG(LS_INFO) << to_string() << ": Received "
+            << stun_method_to_string(stun_msg->type())
+            << " id=" << rtc::hex_encode(stun_msg->transaction_id())
+            << " from " << addr.ToString();
+        signal_unknown_address(this, addr, stun_msg.get(), remote_ufrag);
+    }
 
 }
 
