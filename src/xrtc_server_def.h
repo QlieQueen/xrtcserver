@@ -26,7 +26,7 @@ struct RtcMsg {
     int fd = 0;
     std::string sdp;
     int err_no = 0;
-    void* certificate = nullptr;
+    void* certificate = nullptr;  // rtc_worker初始化时生成(RtcServer::init)
 };
 
 

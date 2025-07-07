@@ -1,15 +1,21 @@
 #include <memory>
 #include <netinet/in.h>
 #include <sstream>
+
 #include <rtc_base/logging.h>
 #include <rtc_base/crc32.h>
-#include "rtc_base/socket_address.h"
-#include "rtc_base/string_encode.h"
+#include <rtc_base/socket_address.h>
+#include <rtc_base/string_encode.h>
+#include "base/event_loop.h"
+#include "ice/candidate.h"
 #include <string>
+#include <utility>
 
-#include "ice/udp_port.h"
-#include "base/async_udp_socket.h"
 #include "base/socket.h"
+#include "ice/ice_connection.h"
+#include "ice/udp_port.h"
+
+#include "base/async_udp_socket.h"
 #include "base/network.h"
 #include "ice/ice_def.h"
 #include "ice/stun.h"
@@ -94,6 +100,22 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
     _candidate.push_back(c);
 
     return 0;
+}
+
+IceConnection* UDPPort::create_connection(EventLoop* el,
+        const Candidate& remote_candidate)
+{
+    IceConnection* conn = new IceConnection(el, this, remote_candidate);
+    auto ret = _connections.insert(
+        std::make_pair(conn->remote_candidate().address, conn));
+    if (ret.second == false && ret.first->second != conn) {
+        RTC_LOG(LS_WARNING) << to_string() << "create ice connection on "
+            << "an existing remote address, addr: "
+            << conn->remote_candidate().address.ToString();
+        ret.first->second = conn;
+    }
+
+    return conn;
 }
 
 void UDPPort::_on_read_packet(AsyncUdpSocket* socket, char* buf, size_t size,

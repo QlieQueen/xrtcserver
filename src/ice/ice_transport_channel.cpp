@@ -90,7 +90,8 @@ void IceTransportChannel::_on_unknown_address(UDPPort* port,
     if (!priority_attr) {
         RTC_LOG(LS_WARNING) << to_string() << ": priority not found in the"
             << " binding request message, remote_addr: " << addr.ToString();
-        port->send_binding_error_response(msg, addr, STUN_ERROR_BAD_REQUEST, STUN_ERROR_REASON_BAD_REQUEST);
+        port->send_binding_error_response(msg, addr, STUN_ERROR_BAD_REQUEST,
+            STUN_ERROR_REASON_BAD_REQUEST);
         return;
     }
 
@@ -106,6 +107,19 @@ void IceTransportChannel::_on_unknown_address(UDPPort* port,
 
     RTC_LOG(LS_INFO) << to_string() << "create peer reflexive candidate: "
         << remote_condidate.to_string();
+
+    IceConnection* conn = port->create_connection(_el, remote_condidate);
+    if (!conn) {
+        RTC_LOG(LS_WARNING) << to_string() << ": create connection from " 
+            << "peer reflexive candidate error. remote_addr: "
+            << addr.ToString();
+        port->send_binding_error_response(msg, addr, STUN_ERROR_SERVER_ERROR,
+            STUN_ERROR_REASON_SERVER_ERROR);
+    }
+
+    RTC_LOG(LS_INFO) << to_string() << ": create connection from " 
+        << "peer reflexive candidate success. remote_addr: "
+        << addr.ToString();
 }
 
 std::string IceTransportChannel::to_string() {
