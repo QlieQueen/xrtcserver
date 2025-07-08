@@ -30,6 +30,8 @@ public:
             IceParamters ice_params);
     ~UDPPort();
 
+    std::string ice_ufrag() { return _ice_params.ice_ufrag; }
+    std::string ice_pwd() { return _ice_params.ice_pwd; }
     int create_ice_candidate(Network* network, int min_port, int max_port, Candidate& c);
     bool get_stun_message(const char* data, size_t len,
             const rtc::SocketAddress& addr,
@@ -39,7 +41,8 @@ public:
         const rtc::SocketAddress& addr,
         int err_code,
         const std::string& reason);
-    IceConnection* create_connection(EventLoop* el, const Candidate& remote_condidate);
+    IceConnection* create_connection(const Candidate& remote_candidate);
+    IceConnection* get_connection(const rtc::SocketAddress& addr);
     
     std::string to_string();
     

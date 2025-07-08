@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -8,6 +9,7 @@
 #include <string>
 
 #include "ice/stun.h"
+#include "rtc_base/socket_address.h"
 
 namespace xrtc {
 
@@ -150,6 +152,28 @@ bool StunMessage::_validate_message_integrity_of_type(uint16_t mi_attr_type,
 
     return memcmp(data + mi_pos + k_stun_attribute_header_size, hmac, mi_attr_size)
         == 0;
+}
+
+bool StunMessage::add_message_integrity(const std::string& password) {
+
+    return true;
+}
+
+
+bool StunMessage::add_fingerprint() {
+
+    return true;
+}
+
+void StunMessage::add_attribute(std::unique_ptr<StunAttribute> attr) {
+    size_t attr_len = attr->length();
+    if (attr_len % 4 != 0) {
+        attr_len += (4 - (attr_len % 4));
+    }
+
+    _length += attr_len;
+
+    _attrs.push_back(std::move(attr));
 }
 
 bool StunMessage::read(rtc::ByteBufferReader* buf) {
@@ -307,6 +331,25 @@ void StunAttribute::consume_padding(rtc::ByteBufferReader* buf) {
     }
 }
 
+
+// Address
+StunAddressAttribute::StunAddressAttribute(uint16_t type,
+        const rtc::SocketAddress& addr) :
+    StunAttribute(type, 0)
+{
+    //set_address(addr);
+}
+
+bool StunAddressAttribute::read(rtc::ByteBufferReader* buf) {
+    return true;
+}
+
+StunXorAddressAttribute::StunXorAddressAttribute(uint16_t type,
+        const rtc::SocketAddress& addr) :
+    StunAddressAttribute(type, addr)
+{
+    //set_address(addr);
+}
 
 //UInt32
 StunUInt32Attribute::StunUInt32Attribute(uint16_t type) :

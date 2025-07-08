@@ -66,7 +66,7 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
     //addr_in.sin_addr = network->ip().ipv4_address();
     addr_in.sin_addr.s_addr = INADDR_ANY;
 
-    if (sock_bind(_socket, (struct sockaddr*)&addr_in, sizeof(sockaddr), 
+    if (sock_bind(_socket, (struct sockaddr*)&addr_in, sizeof(sockaddr),
             min_port, max_port))
     {
         return -1;
@@ -102,10 +102,9 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
     return 0;
 }
 
-IceConnection* UDPPort::create_connection(EventLoop* el,
-        const Candidate& remote_candidate)
+IceConnection* UDPPort::create_connection(const Candidate& remote_candidate)
 {
-    IceConnection* conn = new IceConnection(el, this, remote_candidate);
+    IceConnection* conn = new IceConnection(_el, this, remote_candidate);
     auto ret = _connections.insert(
         std::make_pair(conn->remote_candidate().address, conn));
     if (ret.second == false && ret.first->second != conn) {
@@ -113,14 +112,26 @@ IceConnection* UDPPort::create_connection(EventLoop* el,
             << "an existing remote address, addr: "
             << conn->remote_candidate().address.ToString();
         ret.first->second = conn;
+
+        // todo
     }
 
     return conn;
 }
 
+IceConnection* UDPPort::get_connection(const rtc::SocketAddress& addr) {
+    auto iter = _connections.find(addr);
+    return iter == _connections.end() ? nullptr : iter->second;
+}
+
 void UDPPort::_on_read_packet(AsyncUdpSocket* socket, char* buf, size_t size,
         const rtc::SocketAddress& addr, int64_t ts)
 {
+    if (IceConnection* conn = get_connection(addr)) {
+        conn->on_read_packet(buf, size, ts);
+        return;
+    }
+
     std::unique_ptr<StunMessage> stun_msg;
     std::string remote_ufrag;
     bool res = get_stun_message(buf, size, addr, &stun_msg, &remote_ufrag);
