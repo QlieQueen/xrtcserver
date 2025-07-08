@@ -2,11 +2,13 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <new>
 #include <rtc_base/byte_order.h>
 #include <rtc_base/crc32.h>
 #include <rtc_base/message_digest.h>
 #include <rtc_base/byte_buffer.h>
 #include <string>
+#include <sys/socket.h>
 
 #include "ice/stun.h"
 #include "rtc_base/socket_address.h"
@@ -155,6 +157,22 @@ bool StunMessage::_validate_message_integrity_of_type(uint16_t mi_attr_type,
 }
 
 bool StunMessage::add_message_integrity(const std::string& password) {
+    return _add_message_integrity_of_type(STUN_ATTR_MESSAGE_INTEGRITY,
+        k_stun_message_integrity_size, password.c_str(),
+        password.size());
+}
+
+bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
+        uint16_t attr_size, const char* key, size_t len)
+{
+    auto mi_attr_ptr = std::make_unique<StunByteStringAttribute>(attr_type,
+        std::string(attr_size, '0'));
+    add_attribute(std::move(mi_attr_ptr));
+
+    rtc::ByteBufferWriter buf;
+    if (!write(&buf)) {
+        return false;
+    }
 
     return true;
 }
@@ -261,6 +279,28 @@ bool StunMessage::read(rtc::ByteBufferReader* buf) {
     return true;
 }
 
+bool StunMessage::write(rtc::ByteBufferWriter* buf) {
+    if (!buf) {
+        return false;
+    }
+
+    buf->WriteUInt16(_type);
+    buf->WriteUInt16(_length);
+    buf->WriteUInt32(k_stun_magic_cookie);
+    buf->WriteString(_transaction_id);
+
+    for (const auto& attr : _attrs) {
+        buf->WriteUInt16(attr->type());
+        buf->WriteUInt16(attr->length());
+        if (!attr->write(buf)) {
+            return false;
+        }
+    }
+
+    return true;
+
+}
+
 StunAttributeValueType StunMessage::get_attribute_value_type(int type) {
     switch (type) {
         case STUN_ATTR_USERNAME:
@@ -331,16 +371,46 @@ void StunAttribute::consume_padding(rtc::ByteBufferReader* buf) {
     }
 }
 
-
 // Address
 StunAddressAttribute::StunAddressAttribute(uint16_t type,
         const rtc::SocketAddress& addr) :
     StunAttribute(type, 0)
 {
-    //set_address(addr);
+    set_address(addr);
+}
+
+void StunAddressAttribute::set_address(const rtc::SocketAddress& addr) {
+    _address = addr;
+
+    switch (family()) {
+        case STUN_ADDRESS_IPV4:
+            set_length(SIZE_IPV4);
+            break;
+        case STUN_ADDRESS_IPV6:
+            set_length(SIZE_IPV6);
+            break;
+        default:
+            set_length(SIZE_UNDEF);
+            break;
+    }
+}
+
+StunAddressFamily StunAddressAttribute::family() {
+    switch(_address.family()) {
+        case AF_INET:
+            return STUN_ADDRESS_IPV4;
+        case AF_INET6:
+            return STUN_ADDRESS_IPV6;
+        default:
+            return STUN_ADDRESS_UNDEF;
+    }
 }
 
 bool StunAddressAttribute::read(rtc::ByteBufferReader* buf) {
+    return true;
+}
+
+bool StunAddressAttribute::write(rtc::ByteBufferWriter* buf) {
     return true;
 }
 
@@ -348,7 +418,10 @@ StunXorAddressAttribute::StunXorAddressAttribute(uint16_t type,
         const rtc::SocketAddress& addr) :
     StunAddressAttribute(type, addr)
 {
-    //set_address(addr);
+}
+
+bool StunXorAddressAttribute::write(rtc::ByteBufferWriter* buf) {
+    return true;
 }
 
 //UInt32
@@ -365,9 +438,35 @@ bool StunUInt32Attribute::read(rtc::ByteBufferReader* buf) {
     return true;
 }
 
+bool StunUInt32Attribute::write(rtc::ByteBufferWriter* buf) {
+    buf->WriteUInt32(_bits);
+    return true;
+}
+
 // ByteString
 StunByteStringAttribute::StunByteStringAttribute(uint16_t type, uint16_t length) :
     StunAttribute(type, length) {}
+
+StunByteStringAttribute::StunByteStringAttribute(uint16_t type, const std::string& str) :
+    StunAttribute(type, 0) 
+{
+    copy_bytes(str.c_str(), str.size());
+}
+
+void StunByteStringAttribute::copy_bytes(const char* bytes, size_t len) {
+    char* new_bytes = new char[len];
+    memcpy(new_bytes, bytes, len);
+    _set_bytes(new_bytes);
+    set_length(len);
+}
+
+void StunByteStringAttribute::_set_bytes(char* bytes) {
+    if (_bytes) {
+        delete[] _bytes;
+    }
+    _bytes = bytes;
+}
+
 
 StunByteStringAttribute::~StunByteStringAttribute() {
     if (_bytes) {
@@ -387,7 +486,10 @@ bool StunByteStringAttribute::read(rtc::ByteBufferReader* buf) {
 
     return true;
 }
- 
+
+bool StunByteStringAttribute::write(rtc::ByteBufferWriter* buf) {
+    return true;
+}
 
 
 } // namespace xrtc
