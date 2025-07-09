@@ -151,6 +151,7 @@ public:
 protected:
     StunAttribute(uint16_t type, uint16_t length);
     void consume_padding(rtc::ByteBufferReader* buf);
+    void write_padding(rtc::ByteBufferWriter* buf);
 
 private:
     uint16_t _type;
@@ -172,7 +173,7 @@ public:
     bool read(rtc::ByteBufferReader* buf) override;
     bool write(rtc::ByteBufferWriter* buf) override;
 
-private:
+protected:
     rtc::SocketAddress _address;
 };
 
@@ -182,6 +183,8 @@ public:
     ~StunXorAddressAttribute() {}
 
     bool write(rtc::ByteBufferWriter* buf) override;
+private:
+    rtc::IPAddress _get_xored_ip();
 };
 
 // 表示类型为uint32_t的属性
@@ -193,6 +196,7 @@ public:
     ~StunUInt32Attribute() override {}
 
     uint32_t value() const { return _bits; }
+    void set_value(uint32_t value) { _bits = value; }
     bool read(rtc::ByteBufferReader* buf) override;
     bool write(rtc::ByteBufferWriter* buf) override;
 

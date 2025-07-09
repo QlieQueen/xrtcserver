@@ -1,17 +1,12 @@
-#include <algorithm>
-#include <cstdint>
-#include <cstring>
-#include <memory>
-#include <new>
 #include <rtc_base/byte_order.h>
 #include <rtc_base/crc32.h>
 #include <rtc_base/message_digest.h>
 #include <rtc_base/byte_buffer.h>
-#include <string>
+#include <rtc_base/logging.h>
 #include <sys/socket.h>
 
 #include "ice/stun.h"
-#include "rtc_base/socket_address.h"
+#include "rtc_base/ip_address.h"
 
 namespace xrtc {
 
@@ -163,7 +158,7 @@ bool StunMessage::add_message_integrity(const std::string& password) {
 }
 
 bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
-        uint16_t attr_size, const char* key, size_t len)
+        uint16_t attr_size, const char* key, size_t key_len)
 {
     auto mi_attr_ptr = std::make_unique<StunByteStringAttribute>(attr_type,
         std::string(attr_size, '0'));
@@ -174,12 +169,38 @@ bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
         return false;
     }
 
+    size_t msg_len_for_hmac = buf.Length() - k_stun_attribute_header_size - 
+        mi_attr_ptr->length();
+    char hmac[k_stun_message_integrity_size];
+    size_t ret = rtc::ComputeHmac(rtc::DIGEST_SHA_1, key, key_len,
+        buf.Data(), msg_len_for_hmac, hmac, sizeof(hmac));
+    if (ret != sizeof(hmac)) {
+        RTC_LOG(LS_WARNING) << "compute hmac error";
+        return false;
+    }
+
+    mi_attr_ptr->copy_bytes(hmac, k_stun_message_integrity_size);
+    _password.assign(key, key_len);
+    _integrity = IntegrityStatus::k_integrity_ok;
+
     return true;
 }
 
 
 bool StunMessage::add_fingerprint() {
+    auto fingerprint_attr_ptr = std::make_unique<StunUInt32Attribute>(
+        STUN_ATTR_FINGERPRINT, 0);
+    add_attribute(std::move(fingerprint_attr_ptr));
 
+    rtc::ByteBufferWriter buf;
+    if (!write(&buf)) {
+        return false;
+    }
+
+    size_t msg_len_for_crc32 = buf.Length() - k_stun_attribute_header_size - 
+        fingerprint_attr_ptr->length();
+    uint32_t c = rtc::ComputeCrc32(buf.Data(), msg_len_for_crc32);
+    fingerprint_attr_ptr->set_value(c ^ STUN_FINGERPRINT_XOR_VALUE);
     return true;
 }
 
@@ -371,6 +392,14 @@ void StunAttribute::consume_padding(rtc::ByteBufferReader* buf) {
     }
 }
 
+void StunAttribute::write_padding(rtc::ByteBufferWriter* buf) {
+    int remain = length() % 4;
+    if (remain > 0) {
+        char zeros[4] = {0};
+        buf->WriteBytes(zeros, 4 - remain);
+    }
+}
+
 // Address
 StunAddressAttribute::StunAddressAttribute(uint16_t type,
         const rtc::SocketAddress& addr) :
@@ -411,6 +440,32 @@ bool StunAddressAttribute::read(rtc::ByteBufferReader* buf) {
 }
 
 bool StunAddressAttribute::write(rtc::ByteBufferWriter* buf) {
+
+    StunAddressFamily stun_family = family();
+    if (STUN_ADDRESS_UNDEF == stun_family) {
+        RTC_LOG(LS_WARNING) << "write address attribute error: unknown address";
+        return false;
+    }
+
+    buf->WriteUInt8(0);
+    buf->WriteUInt8(stun_family);
+    buf->WriteUInt16(_address.port());
+
+    in_addr v4addr;
+    in6_addr v6addr;
+    switch (_address.family()) {
+        case AF_INET:
+            v4addr = _address.ipaddr().ipv4_address();
+            buf->WriteBytes((const char*)&v4addr, sizeof(v4addr));
+            break;
+        case AF_INET6:
+            v6addr = _address.ipaddr().ipv6_address();
+            buf->WriteBytes((const char*)&v6addr, sizeof(v6addr));
+            break;
+        default:
+            return false;
+    }
+
     return true;
 }
 
@@ -421,7 +476,54 @@ StunXorAddressAttribute::StunXorAddressAttribute(uint16_t type,
 }
 
 bool StunXorAddressAttribute::write(rtc::ByteBufferWriter* buf) {
+    StunAddressFamily stun_family = family();
+    if (STUN_ADDRESS_UNDEF == stun_family) {
+        RTC_LOG(LS_WARNING) << "write address attribute error: unknown address";
+        return false;
+    }
+
+    rtc::IPAddress xored_ip = _get_xored_ip();
+    if (AF_UNSPEC == xored_ip.family()) {
+        return false;
+    }
+
+    buf->WriteUInt8(0);
+    buf->WriteUInt8(stun_family);
+    buf->WriteUInt16(_address.port() ^ (k_stun_magic_cookie >> 16));
+
+    in_addr v4addr;
+    in6_addr v6addr;
+    switch (_address.family()) {
+        case AF_INET:
+            v4addr = xored_ip.ipv4_address();
+            buf->WriteBytes((const char*)&v4addr, sizeof(v4addr));
+            break;
+        case AF_INET6:
+            v6addr = xored_ip.ipv6_address();
+            buf->WriteBytes((const char*)&v6addr, sizeof(v6addr));
+            break;
+        default:
+            return false;
+    }
+    
     return true;
+}
+
+rtc::IPAddress StunXorAddressAttribute::_get_xored_ip() {
+    rtc::IPAddress ip = _address.ipaddr();
+    in_addr v4addr;
+    switch (_address.family()) {
+        case AF_INET:
+            v4addr = ip.ipv4_address();
+            v4addr.s_addr = (v4addr.s_addr ^ rtc::HostToNetwork32(k_stun_magic_cookie));
+            return rtc::IPAddress(v4addr);
+        case AF_INET6:
+            // no support yet
+            break;
+        default:
+            break;
+    }
+    return rtc::IPAddress();
 }
 
 //UInt32
@@ -488,6 +590,8 @@ bool StunByteStringAttribute::read(rtc::ByteBufferReader* buf) {
 }
 
 bool StunByteStringAttribute::write(rtc::ByteBufferWriter* buf) {
+    buf->WriteBytes(_bytes, length());
+    write_padding(buf);
     return true;
 }
 
