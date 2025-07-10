@@ -43,9 +43,12 @@ void IceConnection::send_stun_binding_response(StunMessage* stun_msg) {
     response.set_type(STUN_BINDING_RESPONSE);
     response.set_transaction_id(stun_msg->transaction_id());
     // response没有调用set_length是因为add_attribute每添加一个属性就更新_length的长度(累加属性长度)
+    // 4 + 8
     response.add_attribute(std::make_unique<StunXorAddressAttribute>
         (STUN_ATTR_XOR_MAPPED_ADDRESS, remote_candidate().address));
+    // 4 + 20
     response.add_message_integrity(_port->ice_pwd());
+    // 4 + 4
     response.add_fingerprint();
 
     send_response_message(response);
@@ -63,14 +66,14 @@ void IceConnection::send_response_message(const StunMessage& response) {
     if (ret < 0) {
         RTC_LOG(LS_WARNING) << to_string() << ": send "
             << stun_method_to_string(response.type())
-            << " error, addr=" << addr.ToString()
+            << " error, to " << addr.ToString()
             << ", id=" << rtc::hex_encode(response.transaction_id());
         return;
     }
 
-    RTC_LOG(LS_WARNING) << to_string() << ": sent "
+    RTC_LOG(LS_INFO) << to_string() << ": sent "
         << stun_method_to_string(response.type())
-        << " addr=" << addr.ToString()
+        << " to " << addr.ToString()
         << ", id=" << rtc::hex_encode(response.transaction_id());
 }
 

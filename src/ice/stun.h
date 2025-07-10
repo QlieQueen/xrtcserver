@@ -24,7 +24,7 @@ const size_t k_stun_message_integrity_size = 20;
 // stun协议的消息类型，如 Binding Request、Binding Response
 enum StunMessageType {
     STUN_BINDING_REQUEST = 0x0001,
-    STUN_BINDING_RESPONSE = 0x1001,
+    STUN_BINDING_RESPONSE = 0x0101,
 
 };
 

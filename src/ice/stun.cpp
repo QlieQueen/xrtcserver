@@ -20,6 +20,8 @@ std::string stun_method_to_string(int type) {
     switch (type) {
         case STUN_BINDING_REQUEST:
             return "BINDING REQUEST";
+        case STUN_BINDING_RESPONSE:
+            return "BINDING RESPONSE";
         default:
             return "Unknown<" + std::to_string(type) + ">";
     }
@@ -162,6 +164,9 @@ bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
 {
     auto mi_attr_ptr = std::make_unique<StunByteStringAttribute>(attr_type,
         std::string(attr_size, '0'));
+    //后续需要访问到mi_attr_ptr中的成员属性，所以保存裸指针，预防add_attribute(std::move(mi_attr_ptr))后，
+    //mi_attr_ptr不再拥有所有权，导致后续使用mi_attr_ptr访问成员属性时造成coredump
+    StunByteStringAttribute* mi_attr_origin_ptr = mi_attr_ptr.get(); 
     add_attribute(std::move(mi_attr_ptr));
 
     rtc::ByteBufferWriter buf;
@@ -170,7 +175,7 @@ bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
     }
 
     size_t msg_len_for_hmac = buf.Length() - k_stun_attribute_header_size - 
-        mi_attr_ptr->length();
+        mi_attr_origin_ptr->length();
     char hmac[k_stun_message_integrity_size];
     size_t ret = rtc::ComputeHmac(rtc::DIGEST_SHA_1, key, key_len,
         buf.Data(), msg_len_for_hmac, hmac, sizeof(hmac));
@@ -179,7 +184,7 @@ bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
         return false;
     }
 
-    mi_attr_ptr->copy_bytes(hmac, k_stun_message_integrity_size);
+    mi_attr_origin_ptr->copy_bytes(hmac, k_stun_message_integrity_size);
     _password.assign(key, key_len);
     _integrity = IntegrityStatus::k_integrity_ok;
 
@@ -190,6 +195,7 @@ bool StunMessage::_add_message_integrity_of_type(uint16_t attr_type,
 bool StunMessage::add_fingerprint() {
     auto fingerprint_attr_ptr = std::make_unique<StunUInt32Attribute>(
         STUN_ATTR_FINGERPRINT, 0);
+    StunUInt32Attribute* fingerprint_attr_origin_ptr = fingerprint_attr_ptr.get();
     add_attribute(std::move(fingerprint_attr_ptr));
 
     rtc::ByteBufferWriter buf;
@@ -198,9 +204,9 @@ bool StunMessage::add_fingerprint() {
     }
 
     size_t msg_len_for_crc32 = buf.Length() - k_stun_attribute_header_size - 
-        fingerprint_attr_ptr->length();
+        fingerprint_attr_origin_ptr->length();
     uint32_t c = rtc::ComputeCrc32(buf.Data(), msg_len_for_crc32);
-    fingerprint_attr_ptr->set_value(c ^ STUN_FINGERPRINT_XOR_VALUE);
+    fingerprint_attr_origin_ptr->set_value(c ^ STUN_FINGERPRINT_XOR_VALUE);
     return true;
 }
 
@@ -210,7 +216,7 @@ void StunMessage::add_attribute(std::unique_ptr<StunAttribute> attr) {
         attr_len += (4 - (attr_len % 4));
     }
 
-    _length += attr_len;
+    _length += (attr_len + k_stun_attribute_header_size);
 
     _attrs.push_back(std::move(attr));
 }

@@ -1,4 +1,5 @@
 #include <rtc_base/logging.h>
+#include <sys/socket.h>
 #include "base/async_udp_socket.h"
 #include "base/socket.h"
 #include "rtc_base/socket_address.h"
@@ -21,8 +22,29 @@ void async_udp_socket_io_cb(EventLoop* /*el*/, IOWatcher* /*w*/,
 }
 
 void AsyncUdpSocket::send_data() {
+    size_t len = 0;
+    int sent = 0;
     while (!_udp_packet_list.empty()) {
         // 发送udp packet
+        UdpPacketData* packet = _udp_packet_list.front();
+        sockaddr_storage saddr;
+        len = packet->addr().ToSockAddrStorage(&saddr);
+        sent = sock_send_to(_socket, packet->data(), packet->size(),
+                MSG_NOSIGNAL, (struct sockaddr*)&saddr, len);
+        if (sent < 0) {
+            RTC_LOG(LS_WARNING) << "send udp packet error, remote_addr: " <<
+                packet->addr().ToString();
+            delete packet;
+            _udp_packet_list.pop_front();
+            return;
+        } else if (0 == sent) {
+            RTC_LOG(LS_WARNING) << "send o bytes, try again, remote_addr: " <<
+                packet->addr().ToString();
+            return;
+        } else {
+            delete packet;
+            _udp_packet_list.pop_front();
+        }
     }
 
     if (_udp_packet_list.empty()) {
@@ -79,6 +101,50 @@ int AsyncUdpSocket::send_to(const char* data, size_t size, const rtc::SocketAddr
 int AsyncUdpSocket::_add_udp_packet(const char* data, size_t size,
         const rtc::SocketAddress& addr)
 {
+    // 1、尝试发送list里面的数据
+    size_t len = 0;
+    int sent = 0;
+    while (!_udp_packet_list.empty()) {
+        // 发送udp packet
+        UdpPacketData* packet = _udp_packet_list.front();
+        sockaddr_storage saddr;
+        len = packet->addr().ToSockAddrStorage(&saddr);
+        sent = sock_send_to(_socket, packet->data(), packet->size(),
+                MSG_NOSIGNAL, (struct sockaddr*)&saddr, len);
+        if (sent < 0) {
+            RTC_LOG(LS_WARNING) << "send udp packet error, remote_addr: " <<
+                packet->addr().ToString();
+            delete packet;
+            _udp_packet_list.pop_front();
+            return -1;
+        } else if (0 == sent) {
+            RTC_LOG(LS_WARNING) << "send o bytes, try again, remote_addr: " <<
+                packet->addr().ToString();
+            goto SEND_AGAIN;
+        } else {
+            delete packet;
+            _udp_packet_list.pop_front();
+        }
+    }
+
+    // 2、发送当前数据
+    sockaddr_storage saddr;
+    len = addr.ToSockAddrStorage(&saddr);
+    sent = sock_send_to(_socket, data, size,
+            MSG_NOSIGNAL, (struct sockaddr*)&saddr, len);
+    if (sent < 0) {
+        RTC_LOG(LS_WARNING) << "send udp packet error, remote_addr: " << addr.ToString();
+        return -1;
+    } else if (0 == sent) {
+        RTC_LOG(LS_WARNING) << "send o bytes, try again, remote_addr: " <<
+            addr.ToString();
+        goto SEND_AGAIN;
+    }
+
+    return size;
+
+SEND_AGAIN:
+    // 3、无法发送出去时，才开启写事件监控
     UdpPacketData* packet_data = new UdpPacketData(data, size, addr);
     _udp_packet_list.push_back(packet_data);
     _el->start_io_event(_socket_watcher, _socket, EventLoop::WRITE);
