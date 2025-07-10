@@ -92,7 +92,7 @@ public:
     void set_length(uint16_t length) { _length = length; }
 
     const std::string& transaction_id() const { return _transaction_id; }
-    void set_transaction_id(const std::string& transaction_id) { 
+    void set_transaction_id(const std::string& transaction_id) {
         _transaction_id = transaction_id; // 只支持新版本，不支持经典stun
     }
 
@@ -103,10 +103,9 @@ public:
     bool add_message_integrity(const std::string& password);
 
     StunAttributeValueType get_attribute_value_type(int type);
-    
-   bool read(rtc::ByteBufferReader* buf); 
-   bool write(rtc::ByteBufferWriter* buf);
 
+    bool read(rtc::ByteBufferReader* buf); 
+    bool write(rtc::ByteBufferWriter* buf) const;
 
     void add_attribute(std::unique_ptr<StunAttribute> attr);
 
