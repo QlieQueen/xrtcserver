@@ -98,8 +98,8 @@ void IceConnection::on_read_packet(const char* buf, size_t len, int64_t ts) {
                         << " from=" << rtc::hex_encode(stun_msg->transaction_id());
                     _port->send_binding_error_response(stun_msg.get(),
                             remote.address,
-                            STUN_ERROR_UNATHORIZED,
-                            STUN_ERROR_REASON_UNATHORIZED);
+                            STUN_ERROR_UNAUTHORIZED,
+                            STUN_ERROR_REASON_UNAUTHORIZED);
                 } else {
                     RTC_LOG(LS_INFO) << to_string() << ": Received "
                         << stun_method_to_string(stun_msg->type())

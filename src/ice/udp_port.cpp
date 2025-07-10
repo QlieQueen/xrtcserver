@@ -19,6 +19,7 @@
 #include "base/network.h"
 #include "ice/ice_def.h"
 #include "ice/stun.h"
+#include "rtc_base/byte_buffer.h"
 
 namespace xrtc {
 
@@ -190,15 +191,15 @@ bool UDPPort::get_stun_message(const char* data, size_t len,
         std::string local_ufrag;
         std::string remote_ufrag;
         if (!_parse_stun_username(stun_msg.get(), &local_ufrag, &remote_ufrag) ||
-                local_ufrag != _ice_params.ice_ufrag)
+                local_ufrag == _ice_params.ice_ufrag)
         {
             // todo
             RTC_LOG(LS_WARNING) << to_string() << ": received "
                 << stun_method_to_string(stun_msg->type())
                 << " with bad local_ufrag: " << local_ufrag
                 << " from " << addr.ToString();
-            send_binding_error_response(stun_msg.get(), addr, STUN_ERROR_UNATHORIZED,
-                STUN_ERROR_REASON_UNATHORIZED);
+            send_binding_error_response(stun_msg.get(), addr, STUN_ERROR_UNAUTHORIZED,
+                STUN_ERROR_REASON_UNAUTHORIZED);
             return true;
         }
 
@@ -209,8 +210,8 @@ bool UDPPort::get_stun_message(const char* data, size_t len,
                 << stun_method_to_string(stun_msg->type())
                 << " with Bad M-I from "
                 << addr.ToString();
-            send_binding_error_response(stun_msg.get(), addr, STUN_ERROR_UNATHORIZED,
-                STUN_ERROR_REASON_UNATHORIZED);
+            send_binding_error_response(stun_msg.get(), addr, STUN_ERROR_UNAUTHORIZED,
+                STUN_ERROR_REASON_UNAUTHORIZED);
             return true;
         }
 
@@ -264,7 +265,41 @@ void UDPPort::send_binding_error_response(StunMessage* stun_msg,
         int err_code,
         const std::string& reason)
 {
+    if (!_async_socket) {
+        return;
+    }
 
+    StunMessage response;
+    response.set_type(STUN_BINDING_ERROR_RESPONSE);
+    response.set_transaction_id(stun_msg->transaction_id());
+    auto error_attr = StunAttribute::create_error_code();
+    error_attr->set_code(err_code);
+    error_attr->set_reason(reason);
+    response.add_attribute(std::move(error_attr));
+
+    if (err_code != STUN_ERROR_BAD_REQUEST && err_code != STUN_ERROR_UNAUTHORIZED) {
+        response.add_message_integrity(_ice_params.ice_pwd);
+    }
+
+    response.add_fingerprint();
+
+    rtc::ByteBufferWriter buf;
+    if (!response.write(&buf)) {
+        return;
+    }
+
+    int ret = _async_socket->send_to(buf.Data(), buf.Length(), addr);
+    if (ret < 0) {
+        RTC_LOG(LS_WARNING) << to_string() << " send "
+            << stun_method_to_string(response.type())
+            << " error, ret=" << ret 
+            << ", to=" << addr.ToString();
+    } else {
+        RTC_LOG(LS_WARNING) << to_string() << " send "
+            << stun_method_to_string(response.type())
+            << ", reason=" << reason 
+            << ", to=" << addr.ToString();       
+    }
 }
 
 } // namespace xrtc
