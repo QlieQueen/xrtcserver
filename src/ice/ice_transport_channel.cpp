@@ -1,10 +1,17 @@
 #include <rtc_base/logging.h>
 
+#include "base/event_loop.h"
+#include "ice/ice_def.h"
 #include "ice/udp_port.h"
 #include "ice/ice_transport_channel.h"
 #include "ice/ice_connection.h"
 
 namespace xrtc {
+
+void ice_ping_cb(EventLoop* /*el*/, TimerWatcher* /*w*/, void* data) {
+    IceTransportChannel* channel = (IceTransportChannel*)data;
+    channel->_on_check_and_ping();
+}
 
 IceTransportChannel::IceTransportChannel(EventLoop* el, 
         PortAllocator* allocator,
@@ -18,11 +25,15 @@ IceTransportChannel::IceTransportChannel(EventLoop* el,
 {
     RTC_LOG(LS_INFO) << "ice transport channel created, transport-name: " << _transport_name
         << ", component: " << _component;
+    _ping_wather = _el->create_timer(ice_ping_cb, this, true);
 }
 
 IceTransportChannel::~IceTransportChannel()
 {
-
+    if (_ping_wather) {
+        _el->delete_timer(_ping_wather);
+        _ping_wather = nullptr;
+    }
 }
 
 void IceTransportChannel::set_ice_params(const IceParamters& ice_params) {
@@ -41,6 +52,12 @@ void IceTransportChannel::set_remote_ice_params(const IceParamters& ice_params) 
         << ", ufrag: " << ice_params.ice_ufrag
         << ", pwd: " << ice_params.ice_pwd;
     _remote_ice_params = ice_params;
+
+    for (auto conn : _ice_controller->connections()) {
+        conn->maybe_set_remote_ice_params(ice_params);
+    }
+
+    _sort_connections_and_update_state();
 }
 
 void IceTransportChannel::gathering_candidate() {
@@ -142,7 +159,13 @@ void IceTransportChannel::_maybe_state_pinging() {
         RTC_LOG(LS_INFO) << to_string() << ": Have a pingable connection "
             << "for the first time, starting to ping";
         // 启动定时器
+        _el->start_timer(_ping_wather, WEAK_PING_INTERVAL * 1000);
+        _start_pinging = true;
     }
+}
+
+void IceTransportChannel::_on_check_and_ping() {
+    RTC_LOG(LS_WARNING) << "===============_on_check_and_ping";
 }
 
 std::string IceTransportChannel::to_string() {
