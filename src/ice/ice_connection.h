@@ -12,6 +12,13 @@ class UDPPort;
 
 class IceConnection {
 public:
+    enum WriteState {
+        STATE_WRITABLE = 0, // 最近发送的ping都能收到相应
+        STATE_WRITE_UNRELIABLE = 1, 
+        STATE_WRITE_INIT = 2, // 初始状态
+        STATE_WRITE_TIMEOUT = 3,
+    };
+
     IceConnection(EventLoop* el, UDPPort* port, const Candidate& remote_candidate);
     ~IceConnection();
 
@@ -22,6 +29,12 @@ public:
     void send_response_message(const StunMessage& response);
     void on_read_packet(const char* buf, size_t len, int64_t ts);
 
+    bool writable() { return _write_state == STATE_WRITABLE; }
+    bool receiving() { return _receiving; }
+    // 当IceConnection处于不可写或者不可读的状态，即为weak状态
+    bool weak() { return !(writable() && receiving()); }
+    bool active() { return _write_state != STATE_WRITE_TIMEOUT; }
+
     std::string to_string();
 
 private:
@@ -29,6 +42,8 @@ private:
     UDPPort* _port;
     Candidate _remote_candidate;
 
+    WriteState _write_state = STATE_WRITE_INIT;
+    bool _receiving = false; // 可读状态只有两种
 };
 
 }

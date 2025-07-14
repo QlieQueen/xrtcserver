@@ -49,7 +49,7 @@ void IceConnection::send_stun_binding_response(StunMessage* stun_msg) {
     response.add_attribute(std::make_unique<StunXorAddressAttribute>
         (STUN_ATTR_XOR_MAPPED_ADDRESS, remote_candidate().address));
     // 4 + 20
-    response.add_message_integrity(_port->ice_pwd());
+    response.add_message_integrity(_port->ice_pwd()); // 构建response时，使用的是服务器的本地ice_pwd(local ice pwd)?
     // 4 + 4
     response.add_fingerprint();
 

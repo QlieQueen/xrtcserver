@@ -191,7 +191,7 @@ bool UDPPort::get_stun_message(const char* data, size_t len,
         std::string local_ufrag;
         std::string remote_ufrag;
         if (!_parse_stun_username(stun_msg.get(), &local_ufrag, &remote_ufrag) ||
-                local_ufrag == _ice_params.ice_ufrag)
+                local_ufrag != _ice_params.ice_ufrag)
         {
             // todo
             RTC_LOG(LS_WARNING) << to_string() << ": received "
@@ -277,8 +277,16 @@ void UDPPort::send_binding_error_response(StunMessage* stun_msg,
     error_attr->set_reason(reason);
     response.add_attribute(std::move(error_attr));
 
+    /*
+    STUN_ERROR_BAD_REQUEST (400)
+        当客户端发送的请求格式错误或无法解析时，服务器返回此错误。此时，客户端可能没有正确构造请
+        求（比如缺少必要属性或格式混乱），服务器可能无法确定正确的共享密钥（如ice_pwd）来生成MI。
+        如果强制要求MI，可能会导致错误响应无法发送（因为生成MI可能失败），反而阻碍了客户端发现自
+        己的错误。
+    */
+
     if (err_code != STUN_ERROR_BAD_REQUEST && err_code != STUN_ERROR_UNAUTHORIZED) {
-        response.add_message_integrity(_ice_params.ice_pwd);
+        response.add_message_integrity(_ice_params.ice_pwd); // 构建response时，使用的是服务器的本地ice_pwd(local ice pwd)?
     }
 
     response.add_fingerprint();

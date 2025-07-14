@@ -1,6 +1,7 @@
 #ifndef __ICE_TRANSPORT_CHANNEL_H_
 #define __ICE_TRANSPORT_CHANNEL_H_
 
+#include <memory>
 #include <vector>
 #include <string>
 
@@ -13,6 +14,7 @@
 #include "ice/port_allocator.h"
 #include "ice/stun.h"
 #include "ice/udp_port.h"
+#include "ice/ice_controller.h"
 
 namespace xrtc {
 
@@ -48,6 +50,9 @@ private:
         const rtc::SocketAddress& addr,
         StunMessage* msg,
         const std::string& remote_ufrag);
+    void _add_connection(IceConnection* conn);
+    void _sort_connections_and_update_state();
+    void _maybe_state_pinging();
 
 private:
     EventLoop* _el;
@@ -57,6 +62,8 @@ private:
     IceParamters _ice_params;
     IceParamters _remote_ice_params;
     std::vector<Candidate> _local_candidates;
+    std::unique_ptr<IceController> _ice_controller;
+    bool _start_pinging = false;
 };
 
 }

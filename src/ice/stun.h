@@ -107,7 +107,7 @@ public:
 
     StunAttributeValueType get_attribute_value_type(int type);
 
-    bool read(rtc::ByteBufferReader* buf); 
+    bool read(rtc::ByteBufferReader* buf);
     bool write(rtc::ByteBufferWriter* buf) const;
 
     void add_attribute(std::unique_ptr<StunAttribute> attr);
@@ -147,7 +147,7 @@ public:
 
     static StunAttribute* create(StunAttributeValueType value_type,
             uint16_t type, uint16_t length, void* owner);
-    static std::unique_ptr<StunErrorCodeAttribute> create_error_code();        
+    static std::unique_ptr<StunErrorCodeAttribute> create_error_code();    
 
     virtual bool read(rtc::ByteBufferReader* buf) = 0;
     virtual bool write(rtc::ByteBufferWriter* buf) = 0;
@@ -243,7 +243,7 @@ public:
 private:
     uint8_t _class;
     uint8_t _number;
-    std::string _reason; 
+    std::string _reason;
 };
 
 

@@ -13,7 +13,8 @@ IceTransportChannel::IceTransportChannel(EventLoop* el,
     _el(el),
     _transport_name(transport_name),
     _component(component),
-    _allocator(allocator)
+    _allocator(allocator),
+    _ice_controller(new IceController(this))
 {
     RTC_LOG(LS_INFO) << "ice transport channel created, transport-name: " << _transport_name
         << ", component: " << _component;
@@ -116,7 +117,32 @@ void IceTransportChannel::_on_unknown_address(UDPPort* port,
         << "peer reflexive candidate success. remote_addr: "
         << addr.ToString();
 
+    _add_connection(conn);
+
     conn->handle_stun_binding_request(msg);
+
+    // 新加入的连接可能是更好的连接，就会打破之前连接的状态
+    _sort_connections_and_update_state();
+}
+
+void IceTransportChannel::_add_connection(IceConnection* conn) {
+    _ice_controller->add_connection(conn);
+}
+
+void IceTransportChannel::_sort_connections_and_update_state() {
+    _maybe_state_pinging();
+}
+
+void IceTransportChannel::_maybe_state_pinging() {
+    if (_start_pinging) {
+        return;
+    }
+
+    if (_ice_controller->has_pingable_connection()) {
+        RTC_LOG(LS_INFO) << to_string() << ": Have a pingable connection "
+            << "for the first time, starting to ping";
+        // 启动定时器
+    }
 }
 
 std::string IceTransportChannel::to_string() {
