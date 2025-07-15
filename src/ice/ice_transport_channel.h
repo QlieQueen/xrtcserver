@@ -54,6 +54,7 @@ private:
     void _sort_connections_and_update_state();
     void _maybe_state_pinging();
     void _on_check_and_ping();
+    void _ping_connection(IceConnection* conn);
 
     friend void ice_ping_cb(EventLoop* /*el*/, TimerWatcher* /*w*/, void* data);
 

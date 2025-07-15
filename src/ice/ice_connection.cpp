@@ -2,6 +2,7 @@
 #include <rtc_base/logging.h>
 #include "ice/candidate.h"
 #include "ice/stun.h"
+#include "ice/stun_request.h"
 #include "ice/udp_port.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/socket_address.h"
@@ -10,6 +11,18 @@
 #include "ice/ice_connection.h"
 
 namespace xrtc {
+
+ConnectionRequest::ConnectionRequest(IceConnection* conn) :
+    StunRequest(new StunMessage()), _connections(conn)
+{
+   
+}
+
+
+void ConnectionRequest::prepare(StunMessage* msg) {
+    
+}
+
 
 IceConnection::IceConnection(EventLoop* el, 
         UDPPort* port,
@@ -126,6 +139,12 @@ void IceConnection::maybe_set_remote_ice_params(const IceParamters& ice_params) 
 bool IceConnection::stable(int64_t now) const {
     // todo
     return false;
+}
+
+
+void IceConnection::ping(int64_t now) {
+    ConnectionRequest* request = new ConnectionRequest(this);
+    _pings_since_last_responses.push_back(SentPing(request->id(), now));
 }
 
 std::string IceConnection::to_string() {
