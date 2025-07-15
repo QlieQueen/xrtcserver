@@ -1,6 +1,8 @@
 #ifndef  __ICE_CONTROLLER_H_
 #define  __ICE_CONTROLLER_H_
 
+#include <set>
+
 #include "ice/ice_connection.h"
 
 namespace xrtc {
@@ -31,16 +33,19 @@ private:
     bool _is_connection_past_ping_interval(const IceConnection* conn, int64_t now);
     int _get_connection_ping_interval(const IceConnection* conn, int64_t now);
 
-private:
     bool _weak() {
         // 当channel没有选出最佳的connection或者最佳的connection处于weak状态时，channel就属于weak状态
         return _selected_connection == nullptr ||  _selected_connection->weak();
     }
+ 
+    bool _more_pingable(IceConnection* conn1, IceConnection* conn2);
 
 private:
     IceTransportChannel* _ice_channel;
     IceConnection* _selected_connection = nullptr;
     std::vector<IceConnection*> _connections;
+    std::set<IceConnection*> _unpinged_connections;
+    std::set<IceConnection*> _pinged_connections;
 };
 
 } // namespace xrtc
