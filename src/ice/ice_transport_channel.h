@@ -68,6 +68,8 @@ private:
     std::unique_ptr<IceController> _ice_controller;
     bool _start_pinging = false;
     TimerWatcher* _ping_wather = nullptr;
+    int _cur_ping_interval = WEAK_PING_INTERVAL;
+    int64_t _last_ping_sent_ms = 0;
 };
 
 }

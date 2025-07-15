@@ -36,6 +36,10 @@ public:
     // 当IceConnection处于不可写或者不可读的状态，即为weak状态
     bool weak() { return !(writable() && receiving()); }
     bool active() { return _write_state != STATE_WRITE_TIMEOUT; }
+    bool stable(int64_t now) const;
+
+    int64_t last_ping_sent() const { return _last_ping_sent; }
+    int num_pings_sent() const { return _nums_pings_sent; }
 
     std::string to_string();
 
@@ -46,6 +50,9 @@ private:
 
     WriteState _write_state = STATE_WRITE_INIT;
     bool _receiving = false; // 可读状态只有两种
+
+    int64_t _last_ping_sent = 0;
+    int _nums_pings_sent = 0;
 };
 
 }

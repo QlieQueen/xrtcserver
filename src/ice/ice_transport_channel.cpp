@@ -159,13 +159,20 @@ void IceTransportChannel::_maybe_state_pinging() {
         RTC_LOG(LS_INFO) << to_string() << ": Have a pingable connection "
             << "for the first time, starting to ping";
         // 启动定时器
-        _el->start_timer(_ping_wather, WEAK_PING_INTERVAL * 1000);
+        _el->start_timer(_ping_wather, _cur_ping_interval * 1000);
         _start_pinging = true;
     }
 }
 
 void IceTransportChannel::_on_check_and_ping() {
-    RTC_LOG(LS_WARNING) << "===============_on_check_and_ping";
+    auto result = _ice_controller->select_connection_to_ping(_last_ping_sent_ms);
+
+    if (_cur_ping_interval != result.ping_interval) {
+        _cur_ping_interval = result.ping_interval;
+        _el->stop_timer(_ping_wather);
+        _el->start_timer(_ping_wather, _cur_ping_interval);
+    }
+
 }
 
 std::string IceTransportChannel::to_string() {

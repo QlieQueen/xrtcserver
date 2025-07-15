@@ -11,6 +11,9 @@ extern const int ICE_PWD_LENGTH;
 
 extern const int WEAK_PING_INTERVAL;
 extern const int STRONG_PING_INTERVAL;
+extern const int STABLING_CONNECTION_PING_INTERVAL;
+extern const int STABLE_CONNECTION_PING_INTERVAL;
+extern const int MIN_PINGS_AT_WEAK_PING_INTERVAL;
 
 enum IceCandidateComponent {
     RTP = 1,
