@@ -24,7 +24,7 @@ private:
     IceConnection* _connection;
 };
 
-class IceConnection {
+class IceConnection : public sigslot::has_slots<> {
 public:
     enum WriteState {
         STATE_WRITABLE = 0, // 最近发送的ping都能收到相应
@@ -67,6 +67,9 @@ public:
     std::string to_string();
 
 private:
+    void _on_stun_send_packet(StunRequest* request, const char* buf, size_t len);
+
+private:
     EventLoop* _el;
     UDPPort* _port;
     Candidate _remote_candidate;
@@ -77,7 +80,7 @@ private:
     int64_t _last_ping_sent = 0;
     int _nums_pings_sent = 0;
     std::vector<SentPing> _pings_since_last_responses;
-    StunRequestManager _requests;
+    StunRequestManager _request_manager;
 };
 
 }

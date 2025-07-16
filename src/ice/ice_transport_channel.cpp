@@ -9,6 +9,8 @@
 
 namespace xrtc {
 
+const int PING_INTERVAL_DIFF = 5;
+
 void ice_ping_cb(EventLoop* /*el*/, TimerWatcher* /*w*/, void* data) {
     IceTransportChannel* channel = (IceTransportChannel*)data;
     channel->_on_check_and_ping();
@@ -166,7 +168,11 @@ void IceTransportChannel::_maybe_state_pinging() {
 }
 
 void IceTransportChannel::_on_check_and_ping() {
-    auto result = _ice_controller->select_connection_to_ping(_last_ping_sent_ms);
+    auto result = _ice_controller->select_connection_to_ping(
+        _last_ping_sent_ms - PING_INTERVAL_DIFF);
+
+    RTC_LOG(LS_WARNING) << "=============conn: " << result.conn
+            << ", ping interval: " << result.ping_interval;
 
     if (result.conn) {
         _ping_connection(const_cast<IceConnection*>(result.conn)); // ???
