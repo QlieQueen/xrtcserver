@@ -40,7 +40,9 @@ enum StunAttrbuteType {
     STUN_ATTR_ERROR_CODE = 0x0009,
     STUN_ATTR_XOR_MAPPED_ADDRESS = 0x0020,
     STUN_ATTR_PRIORITY = 0x0024,
+    STUN_ATTR_USE_CANDIDATE = 0x0025,
     STUN_ATTR_FINGERPRINT = 0x8028,
+    STUN_ATTR_ICE_CONTROLLING = 0x802A,
 };
 
 enum StunErrorCode {
@@ -208,10 +210,28 @@ private:
     uint32_t _bits;
 };
 
+// 表示类型为uint64_t的属性
+class StunUInt64Attribute : public StunAttribute {
+public:
+    static const size_t SIZE = 8;
+    StunUInt64Attribute(uint16_t type);
+    StunUInt64Attribute(uint16_t type, uint64_t value);
+    ~StunUInt64Attribute() override {}
+
+    uint64_t value() const { return _bits; }
+    void set_value(uint64_t value) { _bits = value; }
+    bool read(rtc::ByteBufferReader* buf) override;
+    bool write(rtc::ByteBufferWriter* buf) override;
+
+private:
+    uint64_t _bits;
+};
+
+
 class StunByteStringAttribute : public StunAttribute {
 public:
     StunByteStringAttribute(uint16_t type, uint16_t length);
-    StunByteStringAttribute(uint16_t, const std::string& str);
+    StunByteStringAttribute(uint16_t type, const std::string& str);
     ~StunByteStringAttribute() override;
 
     void copy_bytes(const char* bytes, size_t len);

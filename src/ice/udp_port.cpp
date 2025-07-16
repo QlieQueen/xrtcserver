@@ -98,7 +98,7 @@ int UDPPort::create_ice_candidate(Network* network, int min_port, int max_port,
     c.type = LOCAL_PORT_TYPE;
     c.foundation = compute_foundation(c.type, c.protocol, "", c.address);
 
-    _candidate.push_back(c);
+    _candidates.push_back(c);
 
     return 0;
 }
@@ -309,5 +309,15 @@ void UDPPort::send_binding_error_response(StunMessage* stun_msg,
             << ", to=" << addr.ToString();       
     }
 }
+
+void UDPPort::create_stun_username(const std::string& remote_username,
+        std::string* stun_attr_username)
+{
+    stun_attr_username->clear();
+    *stun_attr_username = remote_username;
+    stun_attr_username->append(":");
+    stun_attr_username->append(_ice_params.ice_ufrag);
+}
+
 
 } // namespace xrtc

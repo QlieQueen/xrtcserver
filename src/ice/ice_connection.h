@@ -21,7 +21,7 @@ protected:
     void prepare(StunMessage* msg) override;
 
 private:
-    IceConnection* _connections;
+    IceConnection* _connection;
 };
 
 class IceConnection {
@@ -44,6 +44,8 @@ public:
     ~IceConnection();
 
     const Candidate& remote_candidate() const { return _remote_candidate; }
+    const Candidate& local_candidate() const;
+    UDPPort* port() { return _port; }
 
     void handle_stun_binding_request(StunMessage* stun_msg);
     void send_stun_binding_response(StunMessage* stun_msg);
@@ -75,6 +77,7 @@ private:
     int64_t _last_ping_sent = 0;
     int _nums_pings_sent = 0;
     std::vector<SentPing> _pings_since_last_responses;
+    StunRequestManager _requests;
 };
 
 }

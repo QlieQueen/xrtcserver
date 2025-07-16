@@ -168,9 +168,6 @@ void IceTransportChannel::_maybe_state_pinging() {
 void IceTransportChannel::_on_check_and_ping() {
     auto result = _ice_controller->select_connection_to_ping(_last_ping_sent_ms);
 
-    RTC_LOG(LS_WARNING) << "=============conn: " << result.conn << ", ping interval: "
-        << result.ping_interval;
-
     if (result.conn) {
         _ping_connection(const_cast<IceConnection*>(result.conn)); // ???
     }

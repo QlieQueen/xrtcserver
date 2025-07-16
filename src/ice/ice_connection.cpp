@@ -1,6 +1,7 @@
 #include <memory>
 #include <rtc_base/logging.h>
 #include "ice/candidate.h"
+#include "ice/ice_def.h"
 #include "ice/stun.h"
 #include "ice/stun_request.h"
 #include "ice/udp_port.h"
@@ -13,14 +14,36 @@
 namespace xrtc {
 
 ConnectionRequest::ConnectionRequest(IceConnection* conn) :
-    StunRequest(new StunMessage()), _connections(conn)
+    StunRequest(new StunMessage()), _connection(conn)
 {
    
 }
 
 
 void ConnectionRequest::prepare(StunMessage* msg) {
-    
+    msg->set_type(STUN_BINDING_REQUEST);
+    std::string username;
+    _connection->port()->create_stun_username(
+         _connection->remote_candidate().username, &username);
+    msg->add_attribute(std::make_unique<StunByteStringAttribute>(
+                    STUN_ATTR_USERNAME, username));
+    msg->add_attribute(std::make_unique<StunUInt64Attribute>(
+                    STUN_ATTR_ICE_CONTROLLING, 0));
+    msg->add_attribute(std::make_unique<StunByteStringAttribute>(
+                    STUN_ATTR_USE_CANDIDATE, 0));
+    // priority
+    int type_pref = ICE_TYPE_PREFERENCE_PRFLX;
+    uint32_t prflx_priority = (type_pref << 24) |
+        (_connection->local_candidate().priority & 0x00FFFFFF);
+    msg->add_attribute(std::make_unique<StunUInt32Attribute>(
+                        STUN_ATTR_PRIORITY, prflx_priority));
+    msg->add_message_integrity(_connection->remote_candidate().password);
+    msg->add_fingerprint();
+}
+
+
+const Candidate& IceConnection::local_candidate() const {
+    return _port->candidates()[0];
 }
 
 
@@ -145,6 +168,8 @@ bool IceConnection::stable(int64_t now) const {
 void IceConnection::ping(int64_t now) {
     ConnectionRequest* request = new ConnectionRequest(this);
     _pings_since_last_responses.push_back(SentPing(request->id(), now));
+    _requests.send(request);
+    _nums_pings_sent++;
 }
 
 std::string IceConnection::to_string() {
