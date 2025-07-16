@@ -41,12 +41,12 @@ void ConnectionRequest::prepare(StunMessage* msg) {
     msg->add_fingerprint();
 }
 
-void ConnectionRequest::on_response(StunMessage* msg) {
-    _connection->on_connection_response(this, msg);
+void ConnectionRequest::on_request_response(StunMessage* msg) {
+    _connection->on_connection_request_response(this, msg);
 }
 
-void ConnectionRequest::on_error_response(StunMessage* msg) {
-    _connection->on_connection_error_response(this, msg);
+void ConnectionRequest::on_request_error_response(StunMessage* msg) {
+    _connection->on_connection_request_error_response(this, msg);
 }
 
 
@@ -78,12 +78,35 @@ void IceConnection::_on_stun_send_packet(StunRequest* request, const char* buf, 
     }
 }
 
-
-void IceConnection::on_connection_response(ConnectionRequest* request, StunMessage* msg) {
-
+void IceConnection::print_pings_since_last_response(std::string& pings, size_t max) {
+    std::stringstream ss;
+    if (_pings_since_last_responses.size() > max) {
+        for (size_t i = 0; i < max; ++i) {
+            ss << rtc::hex_encode(_pings_since_last_responses[i].id) << " ";
+        }
+        ss << "... " << (_pings_since_last_responses.size() - max) << " more";
+    } else {
+        for (auto ping : _pings_since_last_responses) {
+            ss << rtc::hex_encode(ping.id) << " ";
+        }
+    }
+    pings = ss.str();
 }
 
-void IceConnection::on_connection_error_response(ConnectionRequest* request, 
+void IceConnection::on_connection_request_response(ConnectionRequest* request,
+        StunMessage* msg)
+{
+    int rtt = request->elapsed();
+    std::string pings;
+    print_pings_since_last_response(pings, 5);
+    RTC_LOG(LS_INFO) << to_string() << ": Received "
+        << stun_method_to_string(msg->type())
+        << ", id=" << rtc::hex_encode(msg->transaction_id())
+        << ", rtt=" << rtt
+        << ", pings=" << pings;
+}
+
+void IceConnection::on_connection_request_error_response(ConnectionRequest* request,
         StunMessage* msg)
 {
 
@@ -203,6 +226,8 @@ bool IceConnection::stable(int64_t now) const {
 void IceConnection::ping(int64_t now) {
     ConnectionRequest* request = new ConnectionRequest(this);
     _pings_since_last_responses.push_back(SentPing(request->id(), now));
+    RTC_LOG(LS_INFO) << to_string() << ": Sending STUN ping, id="
+        << rtc::hex_encode(request->id());
     _request_manager.send(request);
     _nums_pings_sent++;
 }

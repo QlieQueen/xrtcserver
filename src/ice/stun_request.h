@@ -37,17 +37,19 @@ public:
     void set_manager(StunRequestManager* manager) { _manager = manager; }
     void construct();
     void send();
+    int elapsed();
 
 protected:
     virtual void prepare(StunMessage*) { }
-    virtual void on_response(StunMessage*) { }
-    virtual void on_error_response(StunMessage*) { }
+    virtual void on_request_response(StunMessage*) { }
+    virtual void on_request_error_response(StunMessage*) { }
 
     friend class StunRequestManager;
 
 private:
     StunMessage* _msg;
     StunRequestManager* _manager = nullptr;
+    int64_t _ts = 0; // StunRequest的发送事件
 };
 
 } // namespace xrtc
