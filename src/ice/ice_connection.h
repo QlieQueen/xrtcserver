@@ -19,6 +19,8 @@ public:
 
 protected:
     void prepare(StunMessage* msg) override;
+    void on_response(StunMessage* msg) override;
+    void on_error_response(StunMessage* msg) override;
 
 private:
     IceConnection* _connection;
@@ -51,6 +53,8 @@ public:
     void send_stun_binding_response(StunMessage* stun_msg);
     void send_response_message(const StunMessage& response);
     void on_read_packet(const char* buf, size_t len, int64_t ts);
+    void on_connection_response(ConnectionRequest* request, StunMessage* msg);
+    void on_connection_error_response(ConnectionRequest* request, StunMessage* msg);
     void maybe_set_remote_ice_params(const IceParamters& ice_params);
 
     bool writable() { return _write_state == STATE_WRITABLE; }

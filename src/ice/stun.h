@@ -21,6 +21,23 @@ const uint32_t k_stun_magic_cookie = 0x2112A442; // magic cookie的固定取值 
 const size_t k_stun_magic_cookie_length = sizeof(k_stun_magic_cookie); // magic cookie的长度
 const size_t k_stun_message_integrity_size = 20;
 
+
+/*
+Class：2 bits：请求/成功响应/失败响应/指示
+    00 = Request（请求）
+    01 = Indication（指示，不需要回应）
+    10 = Success Response
+    11 = Error Response
+*/
+const uint16_t STUN_CLASS_REQUEST  = 0x000;
+const uint16_t STUN_CLASS_INDICATION = 0x010;
+const uint16_t STUN_CLASS_SUCCESS = 0x100;
+const uint16_t STUN_CLASS_ERROR   = 0x110;
+
+constexpr uint16_t k_stun_class_mask = 0x0110;
+constexpr uint16_t k_stun_method_mask = 0x3EEF;  // STUN方法掩码（不含class位）
+
+
 // stun协议的消息类型，如 Binding Request、Binding Response
 enum StunMessageType {
     STUN_BINDING_REQUEST = 0x0001,
@@ -106,9 +123,10 @@ public:
 
     IntegrityStatus validate_message_integrity(const std::string& password);
     bool add_message_integrity(const std::string& password);
+    IntegrityStatus integrity() { return _integrity; }
+    bool integrity_ok() { return _integrity == IntegrityStatus::k_integrity_ok; }
 
     StunAttributeValueType get_attribute_value_type(int type);
-
     bool read(rtc::ByteBufferReader* buf);
     bool write(rtc::ByteBufferWriter* buf) const;
 
@@ -266,6 +284,9 @@ private:
     std::string _reason;
 };
 
+int get_stun_success_response(int req_type);
+int get_stun_error_response(int req_type);
+bool is_stun_request_type(int req_type);
 
 } // namespace xrtc
 
