@@ -1,9 +1,8 @@
 #include <memory>
 #include <rtc_base/logging.h>
+#include <rtc_base/time_utils.h>
 #include "ice/candidate.h"
 #include "ice/ice_def.h"
-#include "ice/stun.h"
-#include "ice/stun_request.h"
 #include "ice/udp_port.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/socket_address.h"
@@ -93,6 +92,51 @@ void IceConnection::print_pings_since_last_response(std::string& pings, size_t m
     pings = ss.str();
 }
 
+int64_t IceConnection::last_received() {
+    return std::max(std::max(_last_ping_received, _last_ping_response_received),
+            _last_data_received);
+}
+
+int IceConnection::receiving_timeout() {
+    return WEAK_CONNECTION_RECEIVE_TIMEOUT;
+}
+
+void IceConnection::update_receiving(int64_t now) {
+    bool receiving;
+    if (_last_ping_sent < _last_ping_response_received) {
+        receiving = true;
+    } else {
+        receiving = last_received() > 0 &&
+            (now < last_received() + receiving_timeout());
+    }
+
+    if (_receiving == receiving) {
+        return;
+    }
+
+    RTC_LOG(LS_INFO) << to_string() << ": set receiving to " << receiving;
+    _receiving = receiving;
+    signal_state_change(this);
+}
+
+void IceConnection::set_write_state(WriteState state) {
+    WriteState old_state = _write_state;
+    _write_state = state;
+    if (old_state != state) {
+        RTC_LOG(LS_INFO) << to_string() << ": set write state from " << old_state
+            << " to " << state;
+        signal_state_change(this);
+    }
+}
+
+void IceConnection::received_ping_response(int rtt) {
+    _last_ping_response_received = rtc::TimeMillis();
+    _pings_since_last_responses.clear();
+    update_receiving(_last_ping_response_received); // 只要收到任何合法数据都会调用
+    set_write_state(STATE_WRITABLE);
+}
+
+
 void IceConnection::on_connection_request_response(ConnectionRequest* request,
         StunMessage* msg)
 {
@@ -104,6 +148,7 @@ void IceConnection::on_connection_request_response(ConnectionRequest* request,
         << ", id=" << rtc::hex_encode(msg->transaction_id())
         << ", rtt=" << rtt
         << ", pings=" << pings;
+    received_ping_response(rtt);
 }
 
 void IceConnection::on_connection_request_error_response(ConnectionRequest* request,
