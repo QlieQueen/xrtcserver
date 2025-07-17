@@ -60,6 +60,7 @@ public:
     void print_pings_since_last_response(std::string& pings, size_t max);
 
     void set_write_state(WriteState state);
+    WriteState write_state() { return _write_state; }
     bool writable() { return _write_state == STATE_WRITABLE; }
     bool receiving() { return _receiving; }
     // 当IceConnection处于不可写或者不可读的状态，即为weak状态

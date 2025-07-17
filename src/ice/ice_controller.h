@@ -26,6 +26,7 @@ public:
     const std::vector<IceConnection*> connections() { return _connections; }
     bool has_pingable_connection();
     PingResult select_connection_to_ping(int64_t _last_ping_sent_ms);
+    IceConnection* sort_and_switch_connection();
 
 private:
     bool _is_pingable(IceConnection* conn);
@@ -39,6 +40,9 @@ private:
     }
  
     bool _more_pingable(IceConnection* conn1, IceConnection* conn2);
+
+    int _compare_connections(IceConnection* a, IceConnection* b);
+
 
 private:
     IceTransportChannel* _ice_channel;
