@@ -71,6 +71,8 @@ public:
     void received_ping_response(int rtt);
     void update_receiving(int64_t now);
     int receiving_timeout();
+    uint64_t priority();
+    int rtt() { return _rtt; }
 
     int64_t last_ping_sent() const { return _last_ping_sent; }
     int64_t last_received();
@@ -98,6 +100,8 @@ private:
     int _nums_pings_sent = 0;
     std::vector<SentPing> _pings_since_last_responses;
     StunRequestManager _request_manager;
+    int _rtt = 3000;
+    int _rtt_samples = 0; // rtt采样数，计算rtt需要用到平滑算法
 };
 
 }
