@@ -9,6 +9,7 @@
 
 namespace xrtc {
 
+const int k_min_improvement = 10; // 单位：10ms
 const int a_is_better = 1;
 const int b_is_better = -1;
 
@@ -177,7 +178,12 @@ int IceController::_compare_connections(IceConnection* a, IceConnection* b) {
 
     return 0;
 }
- 
+
+bool IceController::_ready_to_send(IceConnection* conn) {
+    return conn && (conn->writable() || conn->write_state() 
+                    == IceConnection::STATE_WRITE_UNRELIABLE);
+}
+
 IceConnection* IceController::sort_and_switch_connection() {
     absl::c_stable_sort(_connections, [this](IceConnection* conn1, IceConnection* conn2){
         int cmp = _compare_connections(conn1, conn2);
@@ -187,6 +193,27 @@ IceConnection* IceController::sort_and_switch_connection() {
 
         return conn1->rtt() < conn2->rtt();
     });
+
+    RTC_LOG(LS_INFO) << "Sort " << _connections.size() << " available connections: ";
+    for (auto conn : _connections) {
+        RTC_LOG(LS_INFO) << conn->to_string();
+    }
+
+    IceConnection* top_connection = _connections.empty() ? nullptr : _connections[0];
+    if (!_ready_to_send(top_connection) || _selected_connection == top_connection) {
+        return nullptr;
+    }
+
+    // 未选出selected_connection
+    if (!_selected_connection)  {
+        return top_connection;
+    }
+
+    if (top_connection->rtt() <= _selected_connection->rtt() - k_min_improvement) {
+        return top_connection;
+    }
+
+    return nullptr;
 }
 
 

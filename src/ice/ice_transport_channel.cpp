@@ -161,7 +161,23 @@ void IceTransportChannel::_sort_connections_and_update_state() {
 }
 
 void IceTransportChannel::_maybe_switch_selected_connection(IceConnection* conn) {
-    
+    if (!conn) {
+        return;
+    }
+
+    IceConnection* old_selected_connection = _selected_connection;
+    if (old_selected_connection) {
+        old_selected_connection->set_selected(false);
+        RTC_LOG(LS_INFO) << to_string() << ": previous connection: "
+            << old_selected_connection->to_string();
+    }
+
+    RTC_LOG(LS_INFO) << to_string() << ": New selected connection: "
+        << conn->to_string();
+
+    _selected_connection = conn;
+    _selected_connection->set_selected(true);
+    _ice_controller->set_selected_connection(_selected_connection);
 }
 
 void IceTransportChannel::_maybe_state_pinging() {
@@ -192,7 +208,7 @@ void IceTransportChannel::_on_check_and_ping() {
     if (_cur_ping_interval != result.ping_interval) {
         _cur_ping_interval = result.ping_interval;
         _el->stop_timer(_ping_wather);
-        _el->start_timer(_ping_wather, _cur_ping_interval);
+        _el->start_timer(_ping_wather, _cur_ping_interval * 1000);
     }
 
 }
