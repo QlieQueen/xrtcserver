@@ -14,9 +14,10 @@ class StunRequest;
 class StunRequestManager {
 public:
     StunRequestManager() = default;
-    ~StunRequestManager() = default;
+    ~StunRequestManager();
 
     void send(StunRequest* request);
+    void remove(StunRequest* request);
     bool check_response(StunMessage* msg);
 
 public:

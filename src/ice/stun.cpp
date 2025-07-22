@@ -352,6 +352,17 @@ const StunUInt32Attribute* StunMessage::get_uint32_t(uint16_t type) {
     return static_cast<const StunUInt32Attribute*>(_get_attribute(type));
 }
 
+
+const StunErrorCodeAttribute* StunMessage::get_error_code() {
+    return static_cast<const StunErrorCodeAttribute*>(
+            _get_attribute(STUN_ATTR_ERROR_CODE));
+}
+
+int StunMessage::get_error_code_value() {
+    auto error_attr = get_error_code();
+    return error_attr ? error_attr->code() : STUN_ERROR_GLOBAL_FAIL;
+}
+
 const StunAttribute* StunMessage::_get_attribute(uint16_t type) {
     for (const auto& attr : _attrs) {
         if (attr->type() == type) {
@@ -638,6 +649,10 @@ StunErrorCodeAttribute::StunErrorCodeAttribute(uint16_t type, uint16_t length) :
 void StunErrorCodeAttribute::set_code(int code) {
     _class = code / 100;
     _number = code % 100;
+}
+
+int StunErrorCodeAttribute::code() const {
+    return _class * 100 + _number;
 }
 
 void StunErrorCodeAttribute::set_reason(const std::string& reason) {

@@ -65,7 +65,9 @@ enum StunAttrbuteType {
 enum StunErrorCode {
     STUN_ERROR_BAD_REQUEST = 400,
     STUN_ERROR_UNAUTHORIZED = 401,
+    STUN_ERROR_UNKNOWN_ATTRBUTE = 402,
     STUN_ERROR_SERVER_ERROR = 500,
+    STUN_ERROR_GLOBAL_FAIL = 600,
 };
 
 enum StunAddressFamily {
@@ -134,6 +136,8 @@ public:
 
     const StunByteStringAttribute* get_byte_string(uint16_t type);
     const StunUInt32Attribute* get_uint32_t(uint16_t type);
+    const StunErrorCodeAttribute* get_error_code();
+    int get_error_code_value();
 
 private:
     StunAttribute* _create_attribute(uint16_t type, uint16_t length);
@@ -273,6 +277,7 @@ public:
     ~StunErrorCodeAttribute() override = default;
 
     void set_code(int code);
+    int code() const;
     void set_reason(const std::string& reason);
 
     bool read(rtc::ByteBufferReader* buf) override;

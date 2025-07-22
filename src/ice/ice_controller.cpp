@@ -4,6 +4,7 @@
 #include <absl/algorithm/container.h>
 
 #include "ice/ice_controller.h"
+#include "ice/ice_connection.h"
 #include "ice/ice_def.h"
 #include "ice/udp_port.h"
 
@@ -216,6 +217,11 @@ IceConnection* IceController::sort_and_switch_connection() {
     return nullptr;
 }
 
+void IceController::mark_connection_pinged(IceConnection* conn) {
+    if (conn && _pinged_connections.insert(conn).second) {
+        _unpinged_connections.erase(conn);
+    }
+}
 
 } // namespace xrtc
 

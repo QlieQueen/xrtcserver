@@ -28,6 +28,7 @@ public:
     PingResult select_connection_to_ping(int64_t _last_ping_sent_ms);
     IceConnection* sort_and_switch_connection();
     void set_selected_connection(IceConnection* conn) { _selected_connection = conn; }
+    void mark_connection_pinged(IceConnection* conn);
 
 private:
     bool _is_pingable(IceConnection* conn);

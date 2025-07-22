@@ -5,7 +5,9 @@
 
 #include "ice/candidate.h"
 #include "ice/ice_def.h"
+#include "ice/stun.h"
 #include "ice/udp_port.h"
+#include "rtc_base/string_encode.h"
 #include "ice/ice_connection.h"
 
 namespace xrtc {
@@ -162,10 +164,28 @@ void IceConnection::on_connection_request_response(ConnectionRequest* request,
     received_ping_response(rtt);
 }
 
+void IceConnection::fail_and_destroy() {
+
+}
+
 void IceConnection::on_connection_request_error_response(ConnectionRequest* request,
         StunMessage* msg)
 {
-
+    int rtt = request->elapsed();
+    int error_code = msg->get_error_code_value();
+    RTC_LOG(LS_WARNING) << to_string() << ": Received: "
+        << stun_method_to_string(msg->type())
+        << ", id=" << rtc::hex_encode(msg->transaction_id())
+        << ", rtt=" << rtt
+        << ", code=" << error_code;
+    if (STUN_ERROR_UNAUTHORIZED == error_code ||
+            STUN_ERROR_UNKNOWN_ATTRBUTE == error_code || 
+            STUN_ERROR_SERVER_ERROR)
+    {
+        // retry maybe recover
+    } else {
+        fail_and_destroy();
+    }
 }
 
 // rfc5245
@@ -292,7 +312,7 @@ bool IceConnection::stable(int64_t now) const {
 
 
 void IceConnection::ping(int64_t now) {
-    ConnectionRequest* request = new ConnectionRequest(this);
+    ConnectionRequest* request = new ConnectionRequest(this); // 记得在收到对应的response的时候进行delete回收
     _pings_since_last_responses.push_back(SentPing(request->id(), now));
     RTC_LOG(LS_INFO) << to_string() << ": Sending STUN ping, id="
         << rtc::hex_encode(request->id());
