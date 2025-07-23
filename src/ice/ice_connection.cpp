@@ -15,6 +15,8 @@ namespace xrtc {
 
 // old rtt : new rtt = 3 : 1
 const int RTT_RATIO = 3;
+const int MIN_RTT = 100; // 100ms
+const int MAX_RTT = 60000; // 60S
 
 ConnectionRequest::ConnectionRequest(IceConnection* conn) :
     StunRequest(new StunMessage()), _connection(conn)
@@ -185,6 +187,55 @@ void IceConnection::destroy() {
     RTC_LOG(LS_INFO) << to_string() << ": Connection destroyed";
     signal_connection_destroy(this);
     delete this;
+}
+
+bool IceConnection::_too_many_ping_fails(size_t max_pings, int rtt, int64_t now) {
+    if (_pings_since_last_responses.size() < max_pings) {
+        return false;
+    }
+
+    int expected_response_time = _pings_since_last_responses[max_pings-1].sent_time + rtt;
+    return now > expected_response_time;
+}
+
+bool IceConnection::_too_long_without_response(int min_time, int64_t now) {
+    if (_pings_since_last_responses.empty()) {
+        return false;
+    }
+
+    return now > _pings_since_last_responses[0].sent_time + min_time;
+}
+
+void IceConnection::update_state(int64_t now) {
+    int rtt = 2 * _rtt;
+    if (rtt < MIN_RTT) {
+        rtt = MIN_RTT;
+    } else if (rtt > MAX_RTT) {
+        rtt = MAX_RTT;
+    }
+
+    if (_write_state == STATE_WRITABLE &&
+            _too_many_ping_fails(CONNECTION_WRITE_CONNECT_FAILS, rtt, now) &&
+            _too_long_without_response(CONNECTION_WRITE_CONNECT_TIMEOUT, now))                                    
+    {
+        RTC_LOG(LS_INFO) << to_string() << ": UnWritable after "
+            << CONNECTION_WRITE_CONNECT_FAILS << " ping fails and "
+            << now - _pings_since_last_responses[0].sent_time
+            << "ms without a response.";
+        set_write_state(STATE_WRITE_UNRELIABLE);
+    }
+
+
+    if ((_write_state == STATE_WRITE_UNRELIABLE || _write_state == STATE_WRITE_INIT) &&
+            _too_long_without_response(CONNECTION_WRITE_TIMEOUT, now))
+    {
+        RTC_LOG(LS_INFO) << to_string() << ": Timeout after "
+            << now - _pings_since_last_responses[0].sent_time
+            << "ms without a response";
+        set_write_state(STATE_WRITE_TIMEOUT);
+    }
+
+    update_receiving(now);
 }
 
 void IceConnection::on_connection_request_error_response(ConnectionRequest* request,

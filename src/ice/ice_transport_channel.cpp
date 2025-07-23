@@ -223,6 +223,8 @@ void IceTransportChannel::_maybe_state_pinging() {
 }
 
 void IceTransportChannel::_on_check_and_ping() {
+    _update_connection_states();
+
     auto result = _ice_controller->select_connection_to_ping(
         _last_ping_sent_ms - PING_INTERVAL_DIFF);
 
@@ -241,6 +243,14 @@ void IceTransportChannel::_on_check_and_ping() {
         _el->start_timer(_ping_wather, _cur_ping_interval * 1000);
     }
 
+}
+
+void IceTransportChannel::_update_connection_states() {
+    std::vector<IceConnection*> connections = _ice_controller->connections();
+    int64_t now = rtc::TimeMillis();
+    for (auto conn : connections) {
+        conn->update_state(now); // 这里可能会删除特定conn，所以先保存成一个局部变量connections，再遍历
+    }
 }
 
 void IceTransportChannel::_ping_connection(IceConnection* conn) {
