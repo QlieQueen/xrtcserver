@@ -4,6 +4,7 @@
 #include <rtc_base/helpers.h>
 
 #include "ice/candidate.h"
+#include "ice/ice_connection_info.h"
 #include "ice/ice_def.h"
 #include "ice/stun.h"
 #include "ice/udp_port.h"
@@ -147,6 +148,7 @@ void IceConnection::received_ping_response(int rtt) {
     _pings_since_last_responses.clear();
     update_receiving(_last_ping_response_received); // 只要收到任何合法数据都会调用
     set_write_state(STATE_WRITABLE);
+    set_state(IceCandidatePairState::SUCCEEDED);
 }
 
 
@@ -164,8 +166,24 @@ void IceConnection::on_connection_request_response(ConnectionRequest* request,
     received_ping_response(rtt);
 }
 
-void IceConnection::fail_and_destroy() {
+void IceConnection::set_state(IceCandidatePairState state) {
+    IceCandidatePairState old_state = _state;
+    _state = state;
+    if (old_state != state) {
+        RTC_LOG(LS_INFO) << to_string() << ": set_state " << old_state
+            << "->" << _state;
+    }
+}
 
+void IceConnection::fail_and_destroy() {
+    set_state(IceCandidatePairState::FAILED);
+    destroy();
+}
+
+void IceConnection::destroy() {
+    RTC_LOG(LS_INFO) << to_string() << ": Connection destroyed";
+    signal_connection_destroy(this);
+    delete this;
 }
 
 void IceConnection::on_connection_request_error_response(ConnectionRequest* request,
@@ -317,6 +335,7 @@ void IceConnection::ping(int64_t now) {
     RTC_LOG(LS_INFO) << to_string() << ": Sending STUN ping, id="
         << rtc::hex_encode(request->id());
     _request_manager.send(request);
+    set_state(IceCandidatePairState::IN_PROGRESS);
     _nums_pings_sent++;
 }
 

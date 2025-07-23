@@ -223,6 +223,18 @@ void IceController::mark_connection_pinged(IceConnection* conn) {
     }
 }
 
+void IceController::on_connection_destroyed(IceConnection* conn) {
+    _pinged_connections.erase(conn);
+    _unpinged_connections.erase(conn);
+
+    auto iter = _connections.begin();
+    for (; iter != _connections.end(); ++iter) {
+        if (*iter == conn) {
+            _connections.erase(iter);
+        }
+    }
+}
+
 } // namespace xrtc
 
 

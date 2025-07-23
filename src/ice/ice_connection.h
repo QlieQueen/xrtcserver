@@ -3,6 +3,7 @@
 
 #include "base/event_loop.h"
 #include "ice/candidate.h"
+#include "ice/ice_connection_info.h"
 #include "ice/ice_credentials.h"
 #include "ice/stun.h"
 #include "ice/stun_request.h"
@@ -75,6 +76,9 @@ public:
     int rtt() { return _rtt; }
     void set_selected(bool value) { _selected = value; }
     bool selected() { return _selected; }
+    void set_state(IceCandidatePairState state);
+    IceCandidatePairState state() { return _state; }
+    void destroy();
     void fail_and_destroy();
 
     int64_t last_ping_sent() const { return _last_ping_sent; }
@@ -84,6 +88,7 @@ public:
     std::string to_string();
 
     sigslot::signal<IceConnection*> signal_state_change;
+    sigslot::signal<IceConnection*> signal_connection_destroy;
 
 private:
     void _on_stun_send_packet(StunRequest* request, const char* buf, size_t len);
@@ -106,6 +111,7 @@ private:
     StunRequestManager _request_manager;
     int _rtt = 3000;
     int _rtt_samples = 0; // rtt采样数，计算rtt需要用到平滑算法
+    IceCandidatePairState _state = IceCandidatePairState::WAITING;
 };
 
 }
