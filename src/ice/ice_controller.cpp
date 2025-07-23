@@ -20,8 +20,9 @@ void IceController::add_connection(IceConnection* conn) {
 }
 
 bool IceController::has_pingable_connection() {
+    int64_t now = rtc::TimeMillis();
     for (auto conn : _connections) {
-        if (_is_pingable(conn)) {
+        if (_is_pingable(conn, now)) {
             return true;
         }
     }
@@ -29,7 +30,7 @@ bool IceController::has_pingable_connection() {
     return false;
 }
 
-bool IceController::_is_pingable(IceConnection* conn) {
+bool IceController::_is_pingable(IceConnection* conn, int64_t now) {
     // IceConnection可ping的条件
     //   1.要获取对端的ice_ufrag、ice_pwd
     const Candidate& remote = conn->remote_candidate();
@@ -43,7 +44,7 @@ bool IceController::_is_pingable(IceConnection* conn) {
         return true;
     }
 
-    return false;
+    return _is_connection_past_ping_interval(conn, now);
 }
 
 
@@ -79,7 +80,7 @@ const IceConnection* IceController::_find_next_pingable_connection(int64_t now) 
 
     bool has_pingable = false;
     for (auto conn : _unpinged_connections) {
-        if (_is_pingable(conn)) {
+        if (_is_pingable(conn, now)) {
             has_pingable = true;
             break;
         }
@@ -93,6 +94,9 @@ const IceConnection* IceController::_find_next_pingable_connection(int64_t now) 
 
     IceConnection* find_conn = nullptr;
     for (auto conn : _unpinged_connections) {
+        if (!_is_pingable(conn, now)) {
+            continue;
+        }
         // 优先选择最久没有发送ping请求的connection
         if (_more_pingable(conn, find_conn)) {
             find_conn = conn;
@@ -127,6 +131,8 @@ bool IceController::_is_connection_past_ping_interval(const IceConnection* conn,
         int64_t now)
 {
     int interval = _get_connection_ping_interval(conn, now);
+    RTC_LOG(LS_INFO) << "========conn ping_interval: " << interval
+        << ", last_ping_sent: " << conn->last_ping_sent();
     return now >= conn->last_ping_sent() + interval;
 }
 
@@ -134,14 +140,14 @@ int IceController::_get_connection_ping_interval(const IceConnection* conn,
         int64_t now)
 {
     if (conn->num_pings_sent() < MIN_PINGS_AT_WEAK_PING_INTERVAL) {
-        return WEAK_PING_INTERVAL;
+        return WEAK_PING_INTERVAL;  // 48ms
     }
 
-    if (_weak() || conn->stable(now)) {
-        return STABLING_CONNECTION_PING_INTERVAL;
+    if (_weak() || !conn->stable(now)) {
+        return STABLING_CONNECTION_PING_INTERVAL;  // 900ms
     }
 
-    return STABLE_CONNECTION_PING_INTERVAL;
+    return STABLE_CONNECTION_PING_INTERVAL;  // 2500ms
 }
 
 int IceController::_compare_connections(IceConnection* a, IceConnection* b) {

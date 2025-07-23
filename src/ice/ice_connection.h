@@ -92,6 +92,7 @@ public:
 
 private:
     void _on_stun_send_packet(StunRequest* request, const char* buf, size_t len);
+    bool _miss_response(int64_t now) const;
 
 private:
     EventLoop* _el;

@@ -144,6 +144,7 @@ void IceConnection::received_ping_response(int rtt) {
         _rtt = rtt;
     }
 
+    _rtt_samples++;
     _last_ping_response_received = rtc::TimeMillis();
     _pings_since_last_responses.clear();
     update_receiving(_last_ping_response_received); // 只要收到任何合法数据都会调用
@@ -198,7 +199,7 @@ void IceConnection::on_connection_request_error_response(ConnectionRequest* requ
         << ", code=" << error_code;
     if (STUN_ERROR_UNAUTHORIZED == error_code ||
             STUN_ERROR_UNKNOWN_ATTRBUTE == error_code || 
-            STUN_ERROR_SERVER_ERROR)
+            STUN_ERROR_SERVER_ERROR == error_code)
     {
         // retry maybe recover
     } else {
@@ -207,8 +208,8 @@ void IceConnection::on_connection_request_error_response(ConnectionRequest* requ
 }
 
 // rfc5245
-// g : controlling candidate priority
-// d : controlled candidate priority
+// g : controlling(xrtc_server) candidate priority
+// d : controlled(xrtc_client) candidate priority
 // conn priority = 2^32 * min(g, d) + 2 * max(g, d) + (g > d ? 1 : 0)
 uint64_t IceConnection::priority() {
     uint32_t g = local_candidate().priority;
@@ -322,14 +323,21 @@ void IceConnection::maybe_set_remote_ice_params(const IceParamters& ice_params) 
     }
 }
 
-
 bool IceConnection::stable(int64_t now) const {
-    // todo
-    return false;
+    return _rtt_samples > RTT_RATIO + 1 && !_miss_response(now);
 }
 
+bool IceConnection::_miss_response(int64_t now) const {
+    if (_pings_since_last_responses.empty()) {
+        return false;
+    }
+
+    int waiting = now - _pings_since_last_responses[0].sent_time;
+    return waiting > 2 * _rtt;
+}
 
 void IceConnection::ping(int64_t now) {
+    _last_ping_sent = now;
     ConnectionRequest* request = new ConnectionRequest(this); // 记得在收到对应的response的时候进行delete回收
     _pings_since_last_responses.push_back(SentPing(request->id(), now));
     RTC_LOG(LS_INFO) << to_string() << ": Sending STUN ping, id="
