@@ -31,6 +31,7 @@ target_link_libraries(xrtcserver
     librtcbase.a
     libabsl_strings.a
     libabsl_throw_delegate.a
+    libabsl_bad_optional_access.a
     libev.a
     libssl.a 
     libcrypto.a
