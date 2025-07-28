@@ -330,7 +330,7 @@ void IceConnection::on_read_packet(const char* buf, size_t len, int64_t ts) {
     const Candidate& remote = _remote_candidate;
     if (!_port->get_stun_message(buf, len, remote.address, &stun_msg, &remote_ufrag)) {
         // 这个不是stun的数据包，可能时其他的数据包，可能是dtls或者rtp包
-        
+        signal_read_packet(this, buf, len, ts);
     } else if (!stun_msg) {
 
     } else { // stun message

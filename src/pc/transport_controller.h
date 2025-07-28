@@ -1,6 +1,8 @@
 #ifndef __TRANSPORT_CONTROLLER_H_
 #define __TRANSPORT_CONTROLLER_H_
 
+#include <map>
+
 #include "ice/candidate.h"
 #include "ice/ice_agent.h"
 #include "ice/ice_def.h"
@@ -9,6 +11,8 @@
 #include <rtc_base/third_party/sigslot/sigslot.h>
 
 namespace xrtc {
+
+class DtlsTransport;
 
 class TransportController : public sigslot::has_slots<> {
 public:
@@ -27,10 +31,12 @@ private:
             const std::string& transport_name,
             IceCandidateComponent component,
             const std::vector<Candidate>& candidates);
+    void _add_dtls_transport(DtlsTransport* dtls);
 
 private:
     EventLoop* _el;
     IceAgent* _ice_agent;
+    std::map<std::string, DtlsTransport*> _dtls_transport_by_name;
 };
 
 };

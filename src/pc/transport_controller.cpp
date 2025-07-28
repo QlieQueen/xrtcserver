@@ -3,6 +3,7 @@
 #include "ice/ice_credentials.h"
 #include "ice/ice_def.h"
 #include "ice/port_allocator.h"
+#include "pc/dtls_transport.h"
 #include "pc/session_description.h"
 #include <rtc_base/logging.h>
 
@@ -28,6 +29,15 @@ void TransportController::on_candidate_allocate_done(IceAgent* /*agent*/,
     signal_candidate_allocate_done(this, transport_name, component, candidates);
 }
 
+void TransportController::_add_dtls_transport(DtlsTransport* dtls) {
+    auto iter = _dtls_transport_by_name.find(dtls->transport_name());
+    if (iter != _dtls_transport_by_name.end()) {
+        delete iter->second;
+    }
+
+    _dtls_transport_by_name[dtls->transport_name()] = dtls;
+}
+
 
 int TransportController::set_local_description(SessionDescription* desc) {
     if (!desc) {
@@ -47,11 +57,11 @@ int TransportController::set_local_description(SessionDescription* desc) {
         if (td) {
             _ice_agent->set_ice_params(mid, IceCandidateComponent::RTP, IceParamters(td->ice_ufrag, td->ice_pwd));
         }
-        /*
-        if (!content->rtcp_mux()) {
-            _ice_agent->create_channel(_el, mid, IceCandidateComponent::RTCP);
-        }
-        */
+
+        DtlsTransport* dtls = new DtlsTransport(
+            _ice_agent->get_channel(mid, IceCandidateComponent::RTP));
+        _add_dtls_transport(dtls);
+
     }
 
     _ice_agent->gathering_candidate();
