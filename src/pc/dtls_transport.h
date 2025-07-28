@@ -9,6 +9,7 @@
 #include <rtc_base/stream.h>
 
 #include "ice/ice_transport_channel.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
 
 
 namespace xrtc {
@@ -51,12 +52,21 @@ public:
     std::string to_string();
 
     bool set_local_certificate(rtc::RTCCertificate* cert);
+    bool set_remote_fingerprint(const std::string& digest_alg,
+        const char* digest, size_t digest_len);
+
+public:
+    sigslot::signal2<DtlsTransport*, DtlsTransportState> signal_dtls_state;
+    sigslot::signal1<DtlsTransport*> signal_writable_state;
+
 
 private:
     void _on_read_packet(IceTransportChannel* /*channel*/,
         const char* buf, size_t len, int64_t ts);
     bool _setup_dtls();
     bool _maybe_start_dtls();
+    void _set_dtls_state(DtlsTransportState state);
+    void _set_writable_state(bool writable);
 
 private:
     IceTransportChannel* _ice_channel;
