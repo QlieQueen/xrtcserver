@@ -8,6 +8,7 @@
 #include "ice/ice_def.h"
 #include "ice/port_allocator.h"
 #include "pc/session_description.h"
+#include "rtc_base/rtc_certificate.h"
 #include <rtc_base/third_party/sigslot/sigslot.h>
 
 namespace xrtc {
@@ -21,6 +22,7 @@ public:
 
     int set_local_description(SessionDescription* desc);
     int set_remote_description(SessionDescription* desc);
+    void set_local_certificate(rtc::RTCCertificate* cert);
 
 public:
     sigslot::signal4<TransportController*, const std::string&, IceCandidateComponent,
@@ -37,6 +39,7 @@ private:
     EventLoop* _el;
     IceAgent* _ice_agent;
     std::map<std::string, DtlsTransport*> _dtls_transport_by_name;
+    rtc::RTCCertificate* _local_certificate = nullptr;
 };
 
 };

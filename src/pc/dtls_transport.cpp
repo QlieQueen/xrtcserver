@@ -5,6 +5,7 @@
 
 #include "pc/dtls_transport.h"
 #include "absl/strings/string_view.h"
+#include "rtc_base/rtc_certificate.h"
 
 namespace xrtc {
 
@@ -94,6 +95,25 @@ void DtlsTransport::_on_read_packet(IceTransportChannel* /*channel*/,
         default:
         break;
     }
+}
+
+bool DtlsTransport::set_local_certificate(rtc::RTCCertificate* cert) {
+    if (_dtls_active) {
+        if (cert == _local_certificate) {
+            RTC_LOG(LS_INFO) << to_string() << ": Ingoring identical DTLS cert";
+            return true;
+        } else {
+            RTC_LOG(LS_WARNING) << to_string() << ": Cannot change cert in this state";
+            return false;
+        }
+    }
+
+    if (cert) {
+        _local_certificate = cert;
+        _dtls_active = true;
+    }
+
+    return true;
 }
 
 bool DtlsTransport::_setup_dtls() {

@@ -5,6 +5,7 @@
 #include "ice/port_allocator.h"
 #include "pc/dtls_transport.h"
 #include "pc/session_description.h"
+#include "rtc_base/rtc_certificate.h"
 #include <rtc_base/logging.h>
 
 namespace xrtc {
@@ -60,6 +61,7 @@ int TransportController::set_local_description(SessionDescription* desc) {
 
         DtlsTransport* dtls = new DtlsTransport(
             _ice_agent->get_channel(mid, IceCandidateComponent::RTP));
+        dtls->set_local_certificate(_local_certificate);
         _add_dtls_transport(dtls);
 
     }
@@ -92,5 +94,8 @@ int TransportController::set_remote_description(SessionDescription* desc) {
     return 0;
 }
 
+void TransportController::set_local_certificate(rtc::RTCCertificate* cert) {
+    _local_certificate = cert;
+}
 
 } // namespace xrtc

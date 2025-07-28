@@ -50,6 +50,8 @@ public:
     IceCandidateComponent component() { return _ice_channel->component(); }
     std::string to_string();
 
+    bool set_local_certificate(rtc::RTCCertificate* cert);
+
 private:
     void _on_read_packet(IceTransportChannel* /*channel*/,
         const char* buf, size_t len, int64_t ts);
@@ -67,6 +69,7 @@ private:
     rtc::RTCCertificate* _local_certificate = nullptr;
     rtc::Buffer _remote_fingerprint_value;
     std::string _remote_fingerprint_alg;
+    bool _dtls_active = false;
 };
 
 } // namespace xrtc
