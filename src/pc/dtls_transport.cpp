@@ -28,6 +28,10 @@ StreamInterfaceChannel::StreamInterfaceChannel(IceTransportChannel* ice_transpor
 
 }
 
+bool StreamInterfaceChannel::on_received_packet(const char* data, size_t size) {
+    return true;
+}
+
 rtc::StreamState StreamInterfaceChannel::GetState() const {
 
 }
@@ -116,7 +120,7 @@ bool DtlsTransport::set_local_certificate(rtc::RTCCertificate* cert) {
 }
 
 bool DtlsTransport::set_remote_fingerprint(const std::string& digest_alg,
-        const char* digest, size_t digest_len)
+        const unsigned char* digest, size_t digest_len)
 {
     rtc::Buffer remote_fingerprint_value(digest, digest_len);
 
@@ -143,11 +147,12 @@ bool DtlsTransport::set_remote_fingerprint(const std::string& digest_alg,
     // ClientHello packet先到，answer_sdp后到 
     if (_dtls && !fingerprint_change) {
         rtc::SSLPeerCertificateDigestError err;
-        if (_dtls && !_dtls->SetPeerCertificateDigest(digest_alg, (const unsigned char*)digest, digest_len, &err)) {
+        if (_dtls && !_dtls->SetPeerCertificateDigest(digest_alg, digest, digest_len, &err)) {
             RTC_LOG(LS_WARNING) << to_string() << ": Failed to set peer certificate digest";
             _set_dtls_state(DtlsTransportState::k_failed);
             return err == rtc::SSLPeerCertificateDigestError::VERIFICATION_FAILED;
         }
+        return true;
     }
 
     if (_dtls && fingerprint_change) {
@@ -220,8 +225,48 @@ bool DtlsTransport::_setup_dtls() {
     return true;
 }
 
-bool DtlsTransport::_maybe_start_dtls() {
-    return true;
+void DtlsTransport::_maybe_start_dtls() {
+    if (_dtls && _ice_channel->writable()) {
+        if (_dtls->StartSSL()) {
+            RTC_LOG(LS_WARNING) << to_string() << ": Failed to StartSSL.";
+            _set_dtls_state(DtlsTransportState::k_failed);
+            return;
+        }
+
+        RTC_LOG(LS_INFO) << to_string() << ": Started DTLS.";
+        _set_dtls_state(DtlsTransportState::k_connecting);
+
+        if (_catched_client_hello.size()) {
+            if (!_handle_dtls_packet(_catched_client_hello.data<char>(),
+                        _catched_client_hello.size()))
+            {
+                RTC_LOG(LS_WARNING) << to_string() << ": Handing dtls client packet failed.";
+                _set_dtls_state(DtlsTransportState::k_failed);
+            }
+            _catched_client_hello.Clear();
+        }
+    }
+}
+
+bool DtlsTransport::_handle_dtls_packet(const char* data, size_t size) {
+    const uint8_t* tmp_data = reinterpret_cast<const uint8_t*>(data);
+    size_t tmp_size = size;
+
+    while (tmp_size > 0) {
+        if (tmp_size < k_dtls_record_header_len) {
+            return false;
+        }
+
+        size_t recode_len = (tmp_data[11] << 8) | tmp_data[12];
+        if (recode_len + k_dtls_record_header_len > tmp_size) {
+            return false;
+        }
+
+        tmp_data += k_dtls_record_header_len + recode_len;
+        tmp_size -= k_dtls_record_header_len + recode_len;
+    }
+
+    return _downward->on_received_packet(data, size);
 }
 
 std::string DtlsTransport::to_string() {

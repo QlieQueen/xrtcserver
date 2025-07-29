@@ -71,6 +71,15 @@ int TransportController::set_local_description(SessionDescription* desc) {
     return 0;
 }
 
+DtlsTransport* TransportController::_get_dtls_transport(const std::string& transport_name) {
+    auto iter = _dtls_transport_by_name.find(transport_name);
+    if (iter != _dtls_transport_by_name.end()) {
+        return iter->second;
+    }
+
+    return nullptr;
+}
+
 int TransportController::set_remote_description(SessionDescription* desc) {
     if (!desc) {
         return -1;
@@ -86,7 +95,12 @@ int TransportController::set_remote_description(SessionDescription* desc) {
         if (td) {
             _ice_agent->set_remote_ice_params(content->mid(), IceCandidateComponent::RTP,
                     IceParamters(td->ice_ufrag, td->ice_pwd));
-
+            auto dtls = _get_dtls_transport(mid);
+            if (dtls) {
+                dtls->set_remote_fingerprint(td->identity_fingerprint->algorithm,
+                        td->identity_fingerprint->digest.cdata(),
+                        td->identity_fingerprint->digest.size());
+            }
         }
 
     }
