@@ -2,7 +2,7 @@ project(xrtcserver)
 
 cmake_minimum_required(VERSION 3.22)
 
-add_definitions("-g -pipe -W -Wall -fPIC -std=gnu++14 -DWEBRTC_POSIX -DWEBRTC_LINUX")
+add_definitions("-g -pipe -W -Wall -fPIC -std=gnu++14 -DWEBRTC_POSIX -DWEBRTC_LINUX -DNDEBUG")
 
 include_directories(
     "./src"
