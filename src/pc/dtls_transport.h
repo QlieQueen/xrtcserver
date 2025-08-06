@@ -1,6 +1,7 @@
 #ifndef __DTLS_TRANSPORT_H_
 #define __DTLS_TRANSPORT_H_
 
+#include <cstddef>
 #include <memory>
 
 #include <rtc_base/ssl_stream_adapter.h>
@@ -8,6 +9,7 @@
 #include <rtc_base/buffer_queue.h>
 
 #include "ice/ice_transport_channel.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
 
 
 namespace xrtc {
@@ -60,7 +62,7 @@ public:
 public:
     sigslot::signal2<DtlsTransport*, DtlsTransportState> signal_dtls_state;
     sigslot::signal1<DtlsTransport*> signal_writable_state;
-
+    sigslot::signal4<DtlsTransport*, const char*, size_t, int64_t> signal_read_packet;
 
 private:
     void _on_read_packet(IceTransportChannel* /*channel*/,
@@ -84,6 +86,7 @@ private:
     rtc::Buffer _remote_fingerprint_value;
     std::string _remote_fingerprint_alg;
     bool _dtls_active = false;
+    std::vector<int> _srtp_ciphers;
 };
 
 } // namespace xrtc
