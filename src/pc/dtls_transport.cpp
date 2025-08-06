@@ -1,6 +1,7 @@
 #include <rtc_base/logging.h>
 
 #include "pc/dtls_transport.h"
+#include "rtc_base/stream.h"
 
 namespace xrtc {
 
@@ -71,11 +72,17 @@ rtc::StreamResult StreamInterfaceChannel::Write(const void* data,
                            size_t* written,
                            int* error)
 {
+    _ice_channel->send_packet(static_cast<const char*>(data), data_len);
+    if (written) {
+        *written = data_len;
+    }
 
+    return rtc::SR_SUCCESS;
 }
 
 void StreamInterfaceChannel::Close() {
-
+    _state = rtc::SS_CLOSED;
+    _packets.Clear();
 }
 
 
@@ -95,28 +102,40 @@ void DtlsTransport::_on_read_packet(IceTransportChannel* /*channel*/,
 {
     switch (_dtls_state) {
         case DtlsTransportState::k_new:
-        if (_dtls) {
-            RTC_LOG(LS_INFO) << to_string() << ": Received packet before DTLS started.";
-        } else {
-            RTC_LOG(LS_WARNING) << to_string() << ": Received packet before we know if "
-                << "we are doing DTLS or not";
-        }
-
-        if (is_dtls_client_hello_packet(buf, len)) {
-            RTC_LOG(LS_INFO) << to_string() << ": Catching DTLS ClientHello packet until "
-                << "DTLS started";
-            _catched_client_hello.SetData(buf, len);
-
-            if (!_dtls && _local_certificate) {
-                _setup_dtls();
+            if (_dtls) {
+                RTC_LOG(LS_INFO) << to_string() << ": Received packet before DTLS started.";
+            } else {
+                RTC_LOG(LS_WARNING) << to_string() << ": Received packet before we know if "
+                    << "we are doing DTLS or not";
             }
 
-        } else {
-            RTC_LOG(LS_WARNING) << to_string() << ": Not a DTLS ClientHello packet, "
-                << "dropping";
-        }
+            if (is_dtls_client_hello_packet(buf, len)) {
+                RTC_LOG(LS_INFO) << to_string() << ": Catching DTLS ClientHello packet until "
+                    << "DTLS started";
+                _catched_client_hello.SetData(buf, len);
 
-        break;
+                if (!_dtls && _local_certificate) {
+                    _setup_dtls();
+                }
+
+            } else {
+                RTC_LOG(LS_WARNING) << to_string() << ": Not a DTLS ClientHello packet, "
+                    << "dropping";
+            }
+
+            break;
+
+        case DtlsTransportState::k_connecting:
+        case DtlsTransportState::k_connected:
+            if (is_dtls_packet(buf, len)) { // Dtls包
+                if (!_handle_dtls_packet(buf, len)) {
+                    RTC_LOG(LS_WARNING) << to_string() << ": handle DTLS packet failed";
+                    return;
+                }
+            } else { //RTP/RTCP包
+                // todo
+            }
+            break;
 
         default:
         break;

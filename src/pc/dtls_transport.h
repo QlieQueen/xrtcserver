@@ -3,14 +3,11 @@
 
 #include <memory>
 
-#include <rtc_base/buffer.h>
 #include <rtc_base/ssl_stream_adapter.h>
 #include <rtc_base/rtc_certificate.h>
-#include <rtc_base/stream.h>
 #include <rtc_base/buffer_queue.h>
 
 #include "ice/ice_transport_channel.h"
-#include "rtc_base/third_party/sigslot/sigslot.h"
 
 
 namespace xrtc {

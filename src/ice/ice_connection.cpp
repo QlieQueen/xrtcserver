@@ -398,6 +398,16 @@ void IceConnection::ping(int64_t now) {
     _nums_pings_sent++;
 }
 
+
+int IceConnection::send_packet(const char* data, size_t len) {
+    if (!_port) {
+        return -1;
+    }
+
+    return _port->send_to(data, len, _remote_candidate.address);
+}
+
+
 std::string IceConnection::to_string() {
     std::stringstream ss;
     ss << "Conn[" << this << ":" << _port->transport_name()
