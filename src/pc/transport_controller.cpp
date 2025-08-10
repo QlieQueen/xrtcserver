@@ -4,6 +4,7 @@
 #include "ice/ice_def.h"
 #include "ice/port_allocator.h"
 #include "pc/dtls_transport.h"
+#include "pc/peer_connection_def.h"
 #include "pc/session_description.h"
 #include "rtc_base/rtc_certificate.h"
 #include <rtc_base/logging.h>
@@ -62,6 +63,12 @@ int TransportController::set_local_description(SessionDescription* desc) {
         DtlsTransport* dtls = new DtlsTransport(
             _ice_agent->get_channel(mid, IceCandidateComponent::RTP));
         dtls->set_local_certificate(_local_certificate);
+        dtls->signal_receiving_state.connect(this, 
+                &TransportController::_on_dtls_receiving_state);
+        dtls->signal_writable_state.connect(this, 
+                &TransportController::_on_dtls_writable_state);
+        dtls->signal_dtls_state.connect(this, 
+                &TransportController::_on_dtls_state);
         _add_dtls_transport(dtls);
 
     }
@@ -70,6 +77,53 @@ int TransportController::set_local_description(SessionDescription* desc) {
 
     return 0;
 }
+
+void TransportController::_on_dtls_receiving_state(DtlsTransport*) {
+    _update_state();
+}
+
+void TransportController::_on_dtls_writable_state(DtlsTransport*) {
+    _update_state();
+}
+
+void TransportController::_on_dtls_state(DtlsTransport*, DtlsTransportState) {
+    _update_state();
+}
+
+void TransportController::_update_state() {
+    PeerConnectionState pc_state = PeerConnectionState::k_new;
+
+    std::map<DtlsTransportState, int> dtls_state_counts;
+    auto iter = _dtls_transport_by_name.begin();
+    for (; iter != _dtls_transport_by_name.end(); ++iter) {
+        dtls_state_counts[iter->second->dtls_state()]++;
+    }
+
+    int total_connected = dtls_state_counts[DtlsTransportState::k_connected];
+    int total_connecting = dtls_state_counts[DtlsTransportState::k_connecting];
+    int total_failed = dtls_state_counts[DtlsTransportState::k_failed];
+    int total_closed = dtls_state_counts[DtlsTransportState::k_closed];
+    int total_new = dtls_state_counts[DtlsTransportState::k_new];
+    int total_transports = _dtls_transport_by_name.size();
+
+    if (total_failed > 0) {
+        _pc_state = PeerConnectionState::k_failed;
+    } /*else if (IceTransportState::k_disconnected == _ice_agent->ice_state()) {
+        _pc_state = PeerConnectionState::k_disconnected;
+    } */else if (total_new + total_closed == total_transports) {
+        _pc_state = PeerConnectionState::k_new;
+    } else if (total_connecting + total_closed > 0) {
+        _pc_state = PeerConnectionState::k_connecting;
+    } else if (total_connected + total_closed == total_transports) {
+        _pc_state = PeerConnectionState::k_connected;
+    }
+
+    if (_pc_state != pc_state) {
+        _pc_state = pc_state;
+        signal_connection_state(this, pc_state);
+    }
+}
+
 
 DtlsTransport* TransportController::_get_dtls_transport(const std::string& transport_name) {
     auto iter = _dtls_transport_by_name.find(transport_name);

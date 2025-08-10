@@ -3,17 +3,14 @@
 
 #include <map>
 
-#include "ice/candidate.h"
 #include "ice/ice_agent.h"
-#include "ice/ice_def.h"
-#include "ice/port_allocator.h"
 #include "pc/session_description.h"
-#include "rtc_base/rtc_certificate.h"
-#include <rtc_base/third_party/sigslot/sigslot.h>
+#include "pc/peer_connection_def.h"
 
 namespace xrtc {
 
 class DtlsTransport;
+enum class DtlsTransportState;
 
 class TransportController : public sigslot::has_slots<> {
 public:
@@ -27,13 +24,18 @@ public:
 public:
     sigslot::signal4<TransportController*, const std::string&, IceCandidateComponent,
         const std::vector<Candidate>&> signal_candidate_allocate_done;
+    sigslot::signal2<TransportController*, PeerConnectionState> signal_connection_state;
 
 private:
     void on_candidate_allocate_done(IceAgent* agent, 
             const std::string& transport_name,
             IceCandidateComponent component,
             const std::vector<Candidate>& candidates);
+    void _on_dtls_receiving_state(DtlsTransport*);
+    void _on_dtls_writable_state(DtlsTransport*);
+    void _on_dtls_state(DtlsTransport*, DtlsTransportState);
     void _add_dtls_transport(DtlsTransport* dtls);
+    void _update_state();
     DtlsTransport* _get_dtls_transport(const std::string& transport_name);
 
 private:
@@ -41,6 +43,7 @@ private:
     IceAgent* _ice_agent;
     std::map<std::string, DtlsTransport*> _dtls_transport_by_name;
     rtc::RTCCertificate* _local_certificate = nullptr;
+    PeerConnectionState _pc_state = PeerConnectionState::k_new;
 };
 
 };

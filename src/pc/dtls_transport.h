@@ -56,6 +56,7 @@ public:
     const std::string& transport_name() { return _ice_channel->transport_name(); }
     IceCandidateComponent component() { return _ice_channel->component(); }
     std::string to_string();
+    DtlsTransportState dtls_state() { return _dtls_state; }
 
     bool set_local_certificate(rtc::RTCCertificate* cert);
     bool set_remote_fingerprint(const std::string& digest_alg,
