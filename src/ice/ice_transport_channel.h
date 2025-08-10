@@ -30,6 +30,7 @@ public:
     const std::string& transport_name() { return _transport_name; }
     IceCandidateComponent component() { return _component; }
     bool writable() { return _writable; }
+    bool receiving() { return _receiving; }
 
     void set_ice_params(const IceParamters& ice_params);
     void set_remote_ice_params(const IceParamters& ice_params);
