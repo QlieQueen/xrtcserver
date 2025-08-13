@@ -31,24 +31,31 @@ public:
         const IceParamters& ice_params);
 
     void gathering_candidate();
+    IceTransportState ice_state() { return _ice_state; }
 
     void on_candidate_allocate_done(IceTransportChannel*, 
             const std::vector<Candidate>&);
 
 public:
     sigslot::signal4<IceAgent*, const std::string&, IceCandidateComponent,
-        const std::vector<Candidate>&> signal_candidate_allocate_done;        
+        const std::vector<Candidate>&> signal_candidate_allocate_done;
+    sigslot::signal2<IceAgent*, IceTransportState> signal_ice_state;   
 
 private:
     std::vector<IceTransportChannel*>::iterator _get_channel(
         const std::string& transport_name,
-        IceCandidateComponent component
-    );
+        IceCandidateComponent component);
+
+    void _on_ice_receiving_state(IceTransportChannel*);
+    void _on_ice_writable_state(IceTransportChannel*);
+    void _on_ice_state_changed(IceTransportChannel*);
+    void _update_state();
 
 private:
     EventLoop* _el;
     std::vector<IceTransportChannel*> _channels;
     PortAllocator* _allocator;
+    IceTransportState _ice_state = IceTransportState::k_new;
 };
 
 }
