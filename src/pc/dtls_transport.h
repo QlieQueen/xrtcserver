@@ -55,6 +55,8 @@ public:
 
     const std::string& transport_name() { return _ice_channel->transport_name(); }
     IceCandidateComponent component() { return _ice_channel->component(); }
+    IceTransportChannel* ice_channel() { return _ice_channel; }
+
     std::string to_string();
     DtlsTransportState dtls_state() { return _dtls_state; }
 

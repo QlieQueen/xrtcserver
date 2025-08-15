@@ -4,7 +4,9 @@
 
 #include "pc/peer_connection.h"
 #include "ice/ice_credentials.h"
+#include "pc/peer_connection_def.h"
 #include "pc/session_description.h"
+#include "pc/transport_controller.h"
 #include "rtc_base/string_encode.h"
 
 
@@ -28,6 +30,8 @@ PeerConnection::PeerConnection(EventLoop* el, PortAllocator* allocator) :
 {
     _transport_controller->signal_candidate_allocate_done.connect(this,
         &PeerConnection::on_candidate_allocate_done);
+    _transport_controller->signal_connection_state.connect(this,
+        &PeerConnection::_on_connection_state);
 }
 
 PeerConnection::~PeerConnection() {
@@ -52,6 +56,10 @@ void PeerConnection::on_candidate_allocate_done(TransportController* transport_c
     if (content) {
         content->add_candidates(candidates);
     }
+}
+
+void PeerConnection::_on_connection_state(TransportController*, PeerConnectionState state) {
+    signal_connection_state(this, state);
 }
 
 int PeerConnection::init(rtc::RTCCertificate* certificate) {

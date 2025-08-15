@@ -10,6 +10,7 @@
 #include "ice/candidate.h"
 #include "ice/ice_def.h"
 #include "ice/port_allocator.h"
+#include "pc/peer_connection_def.h"
 #include "pc/session_description.h"
 #include "pc/transport_controller.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
@@ -35,11 +36,16 @@ public:
     int init(rtc::RTCCertificate* certificate);
     std::string create_offer(const RTCOfferAnswerOptions& options);
     int set_remote_sdp(const std::string& sdp);
+
+public:
+    sigslot::signal2<PeerConnection*, PeerConnectionState> signal_connection_state;
+
 private:
     void on_candidate_allocate_done(TransportController* transport_controller,
             const std::string& transport_name,
             IceCandidateComponent component,
             const std::vector<Candidate>& candidates);
+    void _on_connection_state(TransportController*, PeerConnectionState state);
 
 private:
     EventLoop* _el;
