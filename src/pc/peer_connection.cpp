@@ -3,6 +3,7 @@
 #include <rtc_base/logging.h>
 
 #include "pc/peer_connection.h"
+#include "base/event_loop.h"
 #include "ice/ice_credentials.h"
 #include "pc/peer_connection_def.h"
 #include "pc/session_description.h"
@@ -35,7 +36,12 @@ PeerConnection::PeerConnection(EventLoop* el, PortAllocator* allocator) :
 }
 
 PeerConnection::~PeerConnection() {
+    if (_destroy_timer) {
+        _el->delete_timer(_destroy_timer);
+        _destroy_timer = nullptr;
+    }
 
+    RTC_LOG(LS_INFO) << "PeerConnection destroy";
 }
 
 void PeerConnection::on_candidate_allocate_done(TransportController* transport_controller,
@@ -66,6 +72,21 @@ int PeerConnection::init(rtc::RTCCertificate* certificate) {
     _certificate = certificate;
     _transport_controller->set_local_certificate(certificate);
     return 0;
+}
+
+void destroy_timer_cb(EventLoop* /*el*/, TimerWatcher* /*timer_wacher*/, void *data) {
+    PeerConnection* pc = (PeerConnection*)data;
+    delete pc;
+}
+
+void PeerConnection::destroy() {
+    if (_destroy_timer) {
+        _el->delete_timer(_destroy_timer);
+        _destroy_timer = nullptr;
+    }
+
+    _destroy_timer = _el->create_timer(destroy_timer_cb, this, false);
+    _el->start_timer(_destroy_timer, 10000); // 10ms，避免coredump
 }
 
 std::string PeerConnection::create_offer(const RTCOfferAnswerOptions& options) {

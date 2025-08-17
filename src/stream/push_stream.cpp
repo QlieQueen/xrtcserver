@@ -1,5 +1,6 @@
 #include "stream/push_stream.h"
 #include "ice/port_allocator.h"
+#include <rtc_base/logging.h>
 
 namespace xrtc {
 
@@ -11,7 +12,7 @@ PushStream::PushStream(EventLoop* el, PortAllocator* allocator, uint64_t uid, co
 }
 
 PushStream::~PushStream() {
-
+    RTC_LOG(LS_INFO) << to_string() << ": Push stream destroy";
 }
 
 std::string PushStream::create_offer() {

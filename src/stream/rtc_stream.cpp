@@ -5,6 +5,7 @@
 
 #include <rtc_base/rtc_certificate.h>
 #include <rtc_base/logging.h>
+#include <sstream>
 
 namespace xrtc {
 
@@ -19,7 +20,7 @@ RtcStream::RtcStream(EventLoop* el, PortAllocator* allocator,
 }
     
 RtcStream::~RtcStream() {
-
+    _pc->destroy();
 }
 
 void RtcStream::_on_connection_state(PeerConnection*, PeerConnectionState state) {
@@ -27,9 +28,13 @@ void RtcStream::_on_connection_state(PeerConnection*, PeerConnectionState state)
         return;
     }
 
-    RTC_LOG(LS_INFO) << "PeerConnectionState change from " << _state
+    RTC_LOG(LS_INFO) << to_string() << ": PeerConnectionState change from " << _state
         << " to " << state;
     _state = state;
+
+    if (_listener) {
+        _listener->on_connection_state(this, state);
+    }
 }
 
 int RtcStream::start(rtc::RTCCertificate* certificate) {
@@ -38,6 +43,12 @@ int RtcStream::start(rtc::RTCCertificate* certificate) {
 
 int RtcStream::set_remote_sdp(const std::string& sdp) {
     return _pc->set_remote_sdp(sdp);
+}
+
+std::string RtcStream::to_string() {
+    std::stringstream ss;
+    ss << "Stream[" << this << "|" << _uid << "|" << _stream_name << "]";
+    return ss.str();
 }
 
 } // namespace xrtc

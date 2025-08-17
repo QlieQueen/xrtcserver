@@ -37,6 +37,21 @@ IceTransportChannel::~IceTransportChannel()
         _el->delete_timer(_ping_wather);
         _ping_wather = nullptr;
     }
+
+    std::vector<IceConnection*> connections = _ice_controller->connections();
+    for (auto conn : connections) {
+        conn->destroy();
+    }
+
+    for (auto port : _ports) {
+        delete port;
+    }
+
+    _ports.clear();
+
+    _ice_controller.reset(nullptr);
+    
+    RTC_LOG(LS_INFO) << to_string() << ": IceTransportChannel destroy";
 }
 
 void IceTransportChannel::set_ice_params(const IceParamters& ice_params) {
@@ -84,6 +99,8 @@ void IceTransportChannel::gathering_candidate() {
     for (auto network : network_list) {
         UDPPort* port = new UDPPort(_el, _transport_name, _component, _ice_params);
         port->signal_unknown_address.connect(this, &IceTransportChannel::_on_unknown_address);
+        _ports.push_back(port);
+
         Candidate c;
         int ret = port->create_ice_candidate(network, _allocator->min_port(), 
             _allocator->max_port(), c);
@@ -317,9 +334,6 @@ void IceTransportChannel::_on_check_and_ping() {
         _ping_connection(conn); // ???
         _ice_controller->mark_connection_pinged(conn);
     }
-
-    RTC_LOG(LS_WARNING) << "=============conn: " << result.conn
-            << ", ping interval: " << result.ping_interval;
 
     if (_cur_ping_interval != result.ping_interval) {
         _cur_ping_interval = result.ping_interval;

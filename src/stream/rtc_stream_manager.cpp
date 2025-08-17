@@ -4,7 +4,9 @@
 #include <rtc_base/logging.h>
 #include <rtc_base/rtc_certificate.h>
 
+#include "pc/peer_connection_def.h"
 #include "stream/push_stream.h"
+#include "stream/rtc_stream.h"
 #include "stream/rtc_stream_manager.h"
 
 
@@ -32,6 +34,15 @@ PushStream* RtcStreamManager::find_push_stream(const std::string& stream_name) {
     return nullptr;
 }
 
+void RtcStreamManager::remove_push_stream(RtcStream* stream) {
+    const std::string& stream_name = stream->get_stream_name();
+    PushStream* push_stream = find_push_stream(stream_name);
+    if (push_stream) {
+        _push_streams.erase(stream_name);
+        delete push_stream;
+    }
+}
+
 int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream_name, 
         bool audio, bool video, uint32_t log_id,
         rtc::RTCCertificate* certificate,
@@ -45,7 +56,7 @@ int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream
 
     stream = new PushStream(_el, _allocator.get(), uid, stream_name,
         audio, video, log_id);
-    
+    stream->register_listener(this);
     stream->start(certificate);
     offer = stream->create_offer();
 
@@ -68,7 +79,7 @@ int RtcStreamManager::set_answer(uint64_t uid, const std::string& stream_name,
             return -1;
         }
 
-        if (uid != push_stream->uid()) {
+        if (uid != push_stream->get_uid()) {
             RTC_LOG(LS_WARNING) << "uid invalid, uid: " << uid
                 << ", stream_name: " << stream_name
                 << ", log_id: " << log_id;
@@ -84,5 +95,14 @@ int RtcStreamManager::set_answer(uint64_t uid, const std::string& stream_name,
     return 0;
 }
 
+void RtcStreamManager::on_connection_state(RtcStream* stream,
+        PeerConnectionState state)
+{
+    if (state == PeerConnectionState::k_failed) {
+        if (stream->stream_type() == RtcStreamType::k_push) {
+            remove_push_stream(stream);
+        }
+    }
+}
 
 }

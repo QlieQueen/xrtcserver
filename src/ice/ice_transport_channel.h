@@ -89,6 +89,7 @@ private:
     IceParamters _ice_params;
     IceParamters _remote_ice_params;
     std::vector<Candidate> _local_candidates;
+    std::vector<UDPPort*> _ports;
     std::unique_ptr<IceController> _ice_controller;
     bool _start_pinging = false;
     TimerWatcher* _ping_wather = nullptr;

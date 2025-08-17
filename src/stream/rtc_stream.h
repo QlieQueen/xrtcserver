@@ -12,23 +12,39 @@
 #include "pc/peer_connection.h"
 #include "pc/peer_connection_def.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
-#include "stream/rtc_stream_manager.h"
 
 namespace xrtc {
+
+class RtcStream;
+
+enum class RtcStreamType {
+    k_push,
+    k_pull,
+};
+
+class RtcStreamListener {
+public:
+    virtual void on_connection_state(RtcStream* stream, PeerConnectionState state) = 0; 
+};
 
 class RtcStream : public sigslot::has_slots<> {
 public:
     RtcStream(EventLoop* el, PortAllocator* allocator, uint64_t uid, const std::string& stream_name,
         bool audio, bool video, uint32_t log_id);
-    
+
     virtual ~RtcStream();
 
     int start(rtc::RTCCertificate* certificate);
     int set_remote_sdp(const std::string& sdp);
+    void register_listener(RtcStreamListener* listener) { _listener = listener; }
 
     virtual std::string create_offer() = 0;
+    virtual RtcStreamType stream_type() = 0;
 
-    uint64_t uid() { return _uid; }
+    uint64_t get_uid() { return _uid; }
+    const std::string& get_stream_name() { return _stream_name; }
+
+    std::string to_string();
 
 private:
     void _on_connection_state(PeerConnection*, PeerConnectionState state);
@@ -41,8 +57,9 @@ protected:
     bool _video;
     uint32_t _log_id;
 
-    std::unique_ptr<PeerConnection> _pc;
+    PeerConnection* _pc;
     PeerConnectionState _state = PeerConnectionState::k_new;
+    RtcStreamListener* _listener = nullptr;
 
     friend class RtcStreamManager;
 };

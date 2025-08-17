@@ -11,7 +11,12 @@ namespace xrtc {
 IceAgent::IceAgent(EventLoop* el, PortAllocator* allocator) : 
     _el(el), _allocator(allocator) {}
 
-IceAgent::~IceAgent() {}
+IceAgent::~IceAgent() {
+    for (auto channel : _channels) {
+        delete channel;
+    }
+    _channels.clear();
+}
 
 IceTransportChannel* IceAgent::get_channel(const std::string& transport_name,
         IceCandidateComponent component)

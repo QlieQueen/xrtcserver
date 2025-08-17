@@ -21,7 +21,16 @@ TransportController::TransportController(EventLoop* el, PortAllocator* allocator
 }
 
 TransportController::~TransportController() {
+    for (auto dtls : _dtls_transport_by_name) {
+        delete dtls.second;
+    }
 
+    _dtls_transport_by_name.clear();
+
+    if (_ice_agent) {
+        delete _ice_agent;
+        _ice_agent = nullptr;
+    }
 }
 
 void TransportController::on_candidate_allocate_done(IceAgent* /*agent*/, 
