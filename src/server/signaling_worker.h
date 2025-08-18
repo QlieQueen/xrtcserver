@@ -59,6 +59,7 @@ private:
     void _process_timeout(TcpConnection* c);
     int _process_push(int cmdno, TcpConnection* c, const json& root, uint32_t log_id);
     int _process_answer(int cmdno, TcpConnection* c, const json& root, uint32_t log_id);
+    int _process_stop_push(int cmdno, TcpConnection* c, const json& root, uint32_t log_id);
     void _process_rtc_msg();
     void _response_server_offer(std::shared_ptr<RtcMsg>);
     void _add_reply(TcpConnection* c, const rtc::Slice& reply);

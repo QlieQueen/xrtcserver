@@ -1,6 +1,7 @@
 #ifndef __RTC_STREAM_MANAGER_H_
 #define __RTC_STREAM_MANAGER_H_
 
+#include <cstdint>
 #include <string>
 #include <stdint.h>
 #include <unordered_map>
@@ -26,12 +27,15 @@ public:
         rtc::RTCCertificate* certificate,
         std::string& offer);
 
+    int stop_push(uint64_t uid, const std::string& stream_name);
+
     int set_answer(uint64_t uid, const std::string& stream_name, 
         const std::string& answer, const std::string& stream_type,
         uint32_t log_id);
 
     PushStream* find_push_stream(const std::string& stream_name);
     void remove_push_stream(RtcStream* stream);
+    void remove_push_stream(uint64_t uid, const std::string& stream_name);
 
     void on_connection_state(RtcStream* stream, PeerConnectionState state) override;
 
