@@ -44,9 +44,9 @@ PeerConnection::~PeerConnection() {
     RTC_LOG(LS_INFO) << "PeerConnection destroy";
 }
 
-void PeerConnection::on_candidate_allocate_done(TransportController* transport_controller,
+void PeerConnection::on_candidate_allocate_done(TransportController* /*transport_controller*/,
             const std::string& transport_name,
-            IceCandidateComponent component,
+            IceCandidateComponent /*component*/,
             const std::vector<Candidate>& candidates)
 {
     for (auto c : candidates) {
@@ -192,7 +192,7 @@ static int parse_transport_info(TransportDescription* td,
 int PeerConnection::set_remote_sdp(const std::string& sdp) {
     std::vector<std::string> fields;
     size_t size = rtc::tokenize(sdp, '\n', &fields);
-    if (size < 0) {
+    if (size <= 0) {
         RTC_LOG(LS_WARNING) << "sdp invalid";
         return -1;
     }

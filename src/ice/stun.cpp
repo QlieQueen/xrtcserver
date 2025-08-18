@@ -393,7 +393,7 @@ StunAttribute::~StunAttribute() = default;
 
 
 StunAttribute* StunAttribute::create(StunAttributeValueType value_type,
-            uint16_t type, uint16_t length, void* owner)
+            uint16_t type, uint16_t length, void* /*owner*/)
 {
     switch (value_type) {
         case STUN_VALUE_BYTE_STRING:
@@ -461,7 +461,7 @@ StunAddressFamily StunAddressAttribute::family() {
     }
 }
 
-bool StunAddressAttribute::read(rtc::ByteBufferReader* buf) {
+bool StunAddressAttribute::read(rtc::ByteBufferReader* /*buf*/) {
     return true;
 }
 
@@ -660,7 +660,7 @@ void StunErrorCodeAttribute::set_reason(const std::string& reason) {
     set_length(MIN_SIZE + reason.size());
 }
 
-bool StunErrorCodeAttribute::read(rtc::ByteBufferReader* buf) {
+bool StunErrorCodeAttribute::read(rtc::ByteBufferReader* /*buf*/) {
     // todo
     return false;
 }

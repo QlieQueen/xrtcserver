@@ -58,7 +58,7 @@ rtc::StreamState StreamInterfaceChannel::GetState() const {
 rtc::StreamResult StreamInterfaceChannel::Read(void* buffer,
         size_t buffer_len,
         size_t* read,
-        int* error)
+        int* /*error*/)
 {
     if (_state == rtc::SS_CLOSED) {
         return rtc::SR_EOS;
@@ -78,7 +78,7 @@ rtc::StreamResult StreamInterfaceChannel::Read(void* buffer,
 rtc::StreamResult StreamInterfaceChannel::Write(const void* data,
                            size_t data_len,
                            size_t* written,
-                           int* error)
+                           int* /*error*/)
 {
     _ice_channel->send_packet(static_cast<const char*>(data), data_len);
     if (written) {
@@ -163,7 +163,7 @@ void DtlsTransport::_on_read_packet(IceTransportChannel* /*channel*/,
             break;
 
         default:
-        break;
+            break;
     }
 }
 
@@ -338,7 +338,7 @@ bool DtlsTransport::_setup_dtls() {
     return true;
 }
 
-void DtlsTransport::_on_dtls_event(rtc::StreamInterface* dtls, int sig, int error) {
+void DtlsTransport::_on_dtls_event(rtc::StreamInterface* /*dtls*/, int sig, int error) {
     if (sig & rtc::SE_OPEN) {
         RTC_LOG(LS_INFO) << to_string() << ": DTLS handshake complete.";
         _set_writable_state(true);

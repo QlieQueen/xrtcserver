@@ -105,6 +105,7 @@ int RtcStreamManager::set_answer(uint64_t uid, const std::string& stream_name,
 
 int RtcStreamManager::stop_push(uint64_t uid, const std::string& stream_name) {
     remove_push_stream(uid, stream_name);
+    return 0;
 }
 
 void RtcStreamManager::on_connection_state(RtcStream* stream,
