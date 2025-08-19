@@ -16,6 +16,7 @@
 namespace xrtc {
 
 class PushStream;
+class PullStream;
 
 class RtcStreamManager : public RtcStreamListener {
 public:
@@ -23,6 +24,11 @@ public:
     ~RtcStreamManager();
 
     int create_push_stream(uint64_t uid, const std::string& stream_name, 
+        bool audio, bool video, uint32_t log_id,
+        rtc::RTCCertificate* certificate,
+        std::string& offer);
+
+    int create_pull_stream(uint64_t uid, const std::string& stream_name, 
         bool audio, bool video, uint32_t log_id,
         rtc::RTCCertificate* certificate,
         std::string& offer);
@@ -40,8 +46,17 @@ public:
     void on_connection_state(RtcStream* stream, PeerConnectionState state) override;
 
 private:
+    PushStream* _find_push_stream(const std::string& stream_name);
+    void _remove_push_stream(RtcStream* stream);
+    void _remove_push_stream(uint64_t uid, const std::string& stream_name);
+
+    PullStream* _find_pull_stream(const std::string& stream_name);
+    void _remove_pull_stream(RtcStream* stream);
+    void _remove_pull_stream(uint64_t uid, const std::string& stream_name);
+private:
     EventLoop* _el;
     std::unordered_map<std::string, PushStream*> _push_streams;
+    std::unordered_map<std::string, PullStream*> _pull_streams;
     std::unique_ptr<PortAllocator> _allocator;
 };
 

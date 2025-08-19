@@ -315,6 +315,9 @@ int SignalingWorker::_process_request(TcpConnection* c,
         case CMDNO_PUSH:
             return _process_push(cmdno, c, root, xh->log_id);
 
+        case CMDNO_PULL:
+            return _process_pull(cmdno, c, root, xh->log_id);
+
         case CMDNO_STOPPUSH:
             ret = _process_stop_push(cmdno, c, root, xh->log_id);
             break;
@@ -353,6 +356,48 @@ int SignalingWorker::_process_request(TcpConnection* c,
     _add_reply(c, reply);
 
     return 0;
+}
+
+int SignalingWorker::_process_pull(int cmdno, TcpConnection* c, 
+    const json& root, uint32_t log_id)
+{
+    uint64_t uid;
+    std::string stream_name;
+    int audio;
+    int video;
+
+    try {
+        uid = root.at("uid");
+        stream_name = root.at("stream_name");
+        audio = root.at("audio");
+        video = root.at("video");
+
+    } catch (const json::out_of_range& e) {
+        RTC_LOG(LS_WARNING) << "parse error: " << e.what()
+            << ", fd: " << c->fd
+            << ", log_id: " << log_id;
+        return -1;
+    }
+
+    RTC_LOG(LS_INFO) << "cmdno[" << cmdno
+        << "] uid[" << uid
+        << "] stream_name[" << stream_name
+        << "] audio[" << audio
+        << "] video[" << video
+        << "] signaling server pull request";
+
+    std::shared_ptr<RtcMsg> msg = std::make_shared<RtcMsg>();
+    msg->cmdno = cmdno;
+    msg->uid = uid;
+    msg->stream_name = stream_name;
+    msg->audio = audio;
+    msg->video = video;
+    msg->log_id = log_id;
+    msg->worker = this;
+    msg->conn = c;
+    msg->fd = c->fd;
+
+    return g_rtc_server->send_rtc_msg(msg);
 }
 
 int SignalingWorker::_process_push(int cmdno, TcpConnection* c, 
@@ -536,6 +581,7 @@ void SignalingWorker::_process_rtc_msg() {
     switch (msg->cmdno)
     {
     case CMDNO_PUSH:
+    case CMDNO_PULL:
         _response_server_offer(msg);
         break;
     
