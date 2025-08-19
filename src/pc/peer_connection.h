@@ -13,7 +13,9 @@
 #include "pc/peer_connection_def.h"
 #include "pc/session_description.h"
 #include "pc/transport_controller.h"
+#include "pc/stream_params.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
+
 
 
 namespace xrtc {
