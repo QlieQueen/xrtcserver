@@ -1,5 +1,6 @@
 #include "stream/push_stream.h"
 #include "ice/port_allocator.h"
+#include "pc/stream_params.h"
 #include <rtc_base/logging.h>
 
 namespace xrtc {
@@ -26,5 +27,31 @@ std::string PushStream::create_offer() {
     return _pc->create_offer(options);
 }
 
+bool PushStream::get_audio_source(std::vector<StreamParams>& source) {
+    return _get_source("audio", source);
+}
+
+bool PushStream::get_video_source(std::vector<StreamParams>& source) {
+    return _get_source("video", source);
+}
+
+bool PushStream::_get_source(const std::string& mid, std::vector<StreamParams>& source) {
+    if (!_pc) {
+        return false;
+    }
+
+    auto remote_desc = _pc->remote_desc();
+    if (!remote_desc) {
+        return false;
+    }
+
+    auto content = remote_desc->get_content(mid);
+    if (!content) {
+        return false;
+    }
+
+    source = content->streams();
+    return true;
+}
 
 }
