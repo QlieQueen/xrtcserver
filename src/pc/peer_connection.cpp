@@ -318,6 +318,7 @@ static void create_track_from_ssrc_info(const std::vector<SsrcInfo>& ssrc_infos,
         }
 
         iter->cname = ssrc_info.cname;
+        iter->stream_id = ssrc_info.stream_id;
         iter->ssrcs.push_back(ssrc_info.ssrc_id);
 
     }
