@@ -15,6 +15,7 @@ PullStream::~PullStream() {
     RTC_LOG(LS_INFO) << to_string() << ": Push stream destroy";
 }
 
+// 对于xrtcserver来说，是向PullStream发送音视频
 std::string PullStream::create_offer() {
     RTCOfferAnswerOptions options;
     options.send_audio = _audio;
@@ -26,5 +27,16 @@ std::string PullStream::create_offer() {
     return _pc->create_offer(options);
 }
 
+void PullStream::add_audio_source(const std::vector<StreamParams>& source) {
+    if (_pc) {
+        _pc->add_audio_source(source);
+    }
+}
+
+void PullStream::add_video_source(const std::vector<StreamParams>& source) {
+    if (_pc) {
+        _pc->add_video_source(source);
+    }
+}
 
 }

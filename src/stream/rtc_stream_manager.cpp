@@ -6,6 +6,7 @@
 #include <rtc_base/rtc_certificate.h>
 
 #include "pc/peer_connection_def.h"
+#include "pc/stream_params.h"
 #include "stream/push_stream.h"
 #include "stream/pull_stream.h"
 #include "stream/rtc_stream.h"
@@ -76,6 +77,7 @@ void RtcStreamManager::_remove_pull_stream(uint64_t uid, const std::string& stre
         delete pull_stream;
     }
 }
+
 int RtcStreamManager::create_push_stream(uint64_t uid, const std::string& stream_name, 
         bool audio, bool video, uint32_t log_id,
         rtc::RTCCertificate* certificate,
@@ -112,9 +114,16 @@ int RtcStreamManager::create_pull_stream(uint64_t uid, const std::string& stream
 
     _remove_pull_stream(uid, stream_name);
 
+    std::vector<StreamParams> audio_source;
+    std::vector<StreamParams> video_source;
+    push_stream->get_audio_source(audio_source);
+    push_stream->get_video_source(video_source);
+
     PullStream* stream = new PullStream(_el, _allocator.get(), uid, stream_name,
         audio, video, log_id);
     stream->register_listener(this);
+    stream->add_audio_source(audio_source);
+    stream->add_video_source(video_source);
     stream->start(certificate);
     offer = stream->create_offer();
 

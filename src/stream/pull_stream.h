@@ -2,6 +2,7 @@
 #define __PULL_STREAM_H_
 
 #include "ice/port_allocator.h"
+#include "pc/stream_params.h"
 #include "stream/rtc_stream.h"
 
 namespace xrtc {
@@ -15,6 +16,9 @@ public:
     ~PullStream() override;
     std::string create_offer() override;
     RtcStreamType stream_type() override { return RtcStreamType::k_pull; }
+
+    void add_audio_source(const std::vector<StreamParams>& source);
+    void add_video_source(const std::vector<StreamParams>& source);
 };
 
 }
