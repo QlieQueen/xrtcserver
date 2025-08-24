@@ -3,8 +3,9 @@
 
 #include <string>
 
-#include "pc/dtls_transport.h"
+#include <rtc_base/buffer.h>
 #include "pc/srtp_transport.h"
+#include "pc/dtls_transport.h"
 
 namespace xrtc {
 
@@ -17,6 +18,12 @@ public:
 
     void set_dtls_transport(DtlsTransport* rtp_dtls_transport,
             DtlsTransport* rtcp_dtls_transport);
+
+private:
+    bool _extract_params(DtlsTransport* dtls_transport,
+            int* selected_crypto_suite,
+            rtc::ZeroOnFreeBuffer<unsigned char>* send_key,
+            rtc::ZeroOnFreeBuffer<unsigned char>* recv_key);
 
 private:
     std::string _transport_name;
