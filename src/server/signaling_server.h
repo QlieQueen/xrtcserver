@@ -1,6 +1,7 @@
 #ifndef __SIGNALING_SERVER_H_
 #define __SIGNALING_SERVER_H_
 
+#include <vector>
 #include <string>
 #include <thread>
 

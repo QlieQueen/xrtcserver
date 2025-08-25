@@ -35,5 +35,6 @@ target_link_libraries(xrtcserver
     libev.a
     libssl.a 
     libcrypto.a
+    libsrtp2.a
     -lpthread
     -no-pie)
