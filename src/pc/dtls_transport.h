@@ -57,6 +57,7 @@ public:
     IceCandidateComponent component() { return _ice_channel->component(); }
     IceTransportChannel* ice_channel() { return _ice_channel; }
     bool is_dtls_active() { return _dtls_active; }
+    bool writable() { return _writable; }
 
     bool set_local_certificate(rtc::RTCCertificate* cert);
     bool set_remote_fingerprint(const std::string& digest_alg,

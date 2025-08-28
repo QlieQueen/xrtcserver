@@ -7,6 +7,10 @@ namespace xrtc {
 SrtpTransport::SrtpTransport(bool rtcp_mux_enabled) :
     _rtcp_mux_enabled(rtcp_mux_enabled) {}
 
+bool SrtpTransport::is_dtls_active() {
+    return _send_session && _recv_session;
+}
+
 bool SrtpTransport::set_rtp_params(int send_cs,
         const uint8_t* send_key,
         size_t send_key_len,
