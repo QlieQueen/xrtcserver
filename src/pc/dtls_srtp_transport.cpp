@@ -59,8 +59,10 @@ void DtlsSrtpTransport::_on_read_packet(DtlsTransport* /*dtls*/,
     rtc::CopyOnWriteBuffer packet(data, len);
     if (packet_type == RtpPacketType::k_rtcp) {
         //_on_rtcp_packet_received(std::move(packet), ts);
+        RTC_LOG(LS_WARNING) << "==================rtcp packet received: " << len;
     } else {
         //_on_rtp_packet_received(std::move(packet), ts);
+        RTC_LOG(LS_WARNING) << "==================rtp packet received: " << len;
     }
 
 }

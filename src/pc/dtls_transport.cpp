@@ -157,7 +157,6 @@ void DtlsTransport::_on_read_packet(IceTransportChannel* /*channel*/,
                     return;
                 }
 
-                RTC_LOG(LS_INFO) << "===================rtp received: " << len;
                 signal_read_packet(this, buf, len, ts);
             }
             break;
