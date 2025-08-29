@@ -1,6 +1,5 @@
 #include <rtc_base/logging.h>
 #include <rtc_base/buffer.h>
-#include <rtc_base/copy_on_write_buffer.h>
 
 #include "module/rtp_rtcp/rtp_utils.h"
 #include "api/array_view.h"
@@ -61,9 +60,37 @@ void DtlsSrtpTransport::_on_read_packet(DtlsTransport* /*dtls*/,
         //_on_rtcp_packet_received(std::move(packet), ts);
         RTC_LOG(LS_WARNING) << "==================rtcp packet received: " << len;
     } else {
-        //_on_rtp_packet_received(std::move(packet), ts);
-        RTC_LOG(LS_WARNING) << "==================rtp packet received: " << len;
+        _on_rtp_packet_received(std::move(packet), ts);
     }
+
+}
+
+void DtlsSrtpTransport::_on_rtp_packet_received(rtc::CopyOnWriteBuffer packet,
+        int64_t ts)
+{
+    if (!is_srtp_active()) {
+        RTC_LOG(LS_WARNING) << "Inactive SRTP transport received a drop packet, drop it.";
+        return;
+    }
+
+    char* data = packet.data<char>();
+    int len = packet.size();
+
+    if (!unprotect_rtp(data, len, &len)) {
+        const int k_fail_log = 100;
+        if (_unprotect_fail_count % k_fail_log == 0) {
+            RTC_LOG(LS_WARNING) << "Failed to unprotect rtp packet: "
+                << ", size=" << len
+                << ", seqnum=" << parse_rtp_sequence_number(packet)
+                << ", ssrc=" << parse_rtp_ssrc(packet)
+                << ", _unprotect_fail_count=" << _unprotect_fail_count;
+        }
+        _unprotect_fail_count++;
+        return;
+    }
+
+    packet.SetSize(len);
+    signal_rtp_packet_received(this, &packet, ts);
 
 }
 
@@ -74,7 +101,7 @@ bool DtlsSrtpTransport::is_dtls_writable() {
 }
 
 void DtlsSrtpTransport::_maybe_setup_dtls_srtp() {
-    if (is_dtls_active() || !is_dtls_writable()) {
+    if (is_srtp_active() || !is_dtls_writable()) {
         return;
     }
 

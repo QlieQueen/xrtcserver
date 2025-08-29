@@ -1,3 +1,4 @@
+#include <rtc_base/byte_io.h>
 #include "module/rtp_rtcp/rtp_utils.h"
 #include "api/array_view.h"
 
@@ -38,6 +39,14 @@ RtpPacketType infer_rtp_packet_type(rtc::ArrayView<const char> packet) {
     }
 
     return RtpPacketType::k_unknown;
+}
+
+uint16_t parse_rtp_sequence_number(rtc::ArrayView<const uint8_t> packet) {
+    return rtc::ByteReader<uint16_t>::ReadBigEndian(packet.data() + 2); // rtp包的第二和第三个字节是sequence_num
+}
+
+uint32_t parse_rtp_ssrc(rtc::ArrayView<const uint8_t> packet) {
+    return rtc::ByteReader<uint32_t>::ReadBigEndian(packet.data() + 8);
 }
 
 } // namespace xrtc

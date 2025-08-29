@@ -20,6 +20,8 @@ public:
             const std::vector<int>& extension_ids);
     bool update_recv(int cs, const uint8_t* key, size_t key_len,
             const std::vector<int>& extension_ids);
+    bool unprotect_rtp(void* p, int in_len, int* out_len);
+
 private:
     bool _set_key(int type, int cs, const uint8_t* key, size_t key_len,
         const std::vector<int>& extension_ids);
