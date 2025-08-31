@@ -6,10 +6,13 @@
 #include "ice/ice_agent.h"
 #include "pc/session_description.h"
 #include "pc/peer_connection_def.h"
+#include "rtc_base/copy_on_write_buffer.h"
+#include "rtc_base/third_party/sigslot/sigslot.h"
 
 namespace xrtc {
 
 class DtlsTransport;
+class DtlsSrtpTransport;
 enum class DtlsTransportState;
 
 class TransportController : public sigslot::has_slots<> {
@@ -25,7 +28,10 @@ public:
     sigslot::signal4<TransportController*, const std::string&, IceCandidateComponent,
         const std::vector<Candidate>&> signal_candidate_allocate_done;
     sigslot::signal2<TransportController*, PeerConnectionState> signal_connection_state;
-
+    sigslot::signal3<TransportController*, rtc::CopyOnWriteBuffer*, int64_t>
+        signal_rtp_packet_received;
+    sigslot::signal3<TransportController*, rtc::CopyOnWriteBuffer*, int64_t>
+        signal_rtcp_packet_received;
 private:
     void on_candidate_allocate_done(IceAgent* agent, 
             const std::string& transport_name,
@@ -34,6 +40,10 @@ private:
     void _on_dtls_receiving_state(DtlsTransport*);
     void _on_dtls_writable_state(DtlsTransport*);
     void _on_dtls_state(DtlsTransport*, DtlsTransportState);
+    void _on_rtp_packet_received(DtlsSrtpTransport*,
+            rtc::CopyOnWriteBuffer* packet, int64_t ts);
+    void _on_rtcp_packet_received(DtlsSrtpTransport*,
+            rtc::CopyOnWriteBuffer* packet, int64_t ts);
     void _add_dtls_transport(DtlsTransport* dtls);
     void _on_ice_state(IceAgent*, IceTransportState);
     void _update_state();

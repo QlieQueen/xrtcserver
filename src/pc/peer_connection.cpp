@@ -38,9 +38,13 @@ PeerConnection::PeerConnection(EventLoop* el, PortAllocator* allocator) :
         _transport_controller(new TransportController(el, allocator))      
 {
     _transport_controller->signal_candidate_allocate_done.connect(this,
-        &PeerConnection::on_candidate_allocate_done);
+        &PeerConnection::_on_candidate_allocate_done);
     _transport_controller->signal_connection_state.connect(this,
         &PeerConnection::_on_connection_state);
+    _transport_controller->signal_rtp_packet_received.connect(this, 
+        &PeerConnection::_on_rtp_packet_received);
+    _transport_controller->signal_rtcp_packet_received.connect(this, 
+        &PeerConnection::_on_rtcp_packet_received);
 }
 
 PeerConnection::~PeerConnection() {
@@ -52,7 +56,7 @@ PeerConnection::~PeerConnection() {
     RTC_LOG(LS_INFO) << "PeerConnection destroy";
 }
 
-void PeerConnection::on_candidate_allocate_done(TransportController* /*transport_controller*/,
+void PeerConnection::_on_candidate_allocate_done(TransportController* /*transport_controller*/,
             const std::string& transport_name,
             IceCandidateComponent /*component*/,
             const std::vector<Candidate>& candidates)
@@ -75,6 +79,19 @@ void PeerConnection::on_candidate_allocate_done(TransportController* /*transport
 void PeerConnection::_on_connection_state(TransportController*, PeerConnectionState state) {
     signal_connection_state(this, state);
 }
+
+void PeerConnection::_on_rtp_packet_received(TransportController*,
+        rtc::CopyOnWriteBuffer* packet, int64_t ts)
+{
+    signal_rtp_packet_received(this, packet, ts);
+}
+
+void PeerConnection::_on_rtcp_packet_received(TransportController*,
+        rtc::CopyOnWriteBuffer* packet, int64_t ts)
+{
+    signal_rtcp_packet_received(this, packet, ts);
+}
+
 
 int PeerConnection::init(rtc::RTCCertificate* certificate) {
     _certificate = certificate;

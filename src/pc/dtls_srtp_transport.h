@@ -25,6 +25,8 @@ public:
 public:
     sigslot::signal3<DtlsSrtpTransport*, rtc::CopyOnWriteBuffer*, int64_t>
         signal_rtp_packet_received;
+    sigslot::signal3<DtlsSrtpTransport*, rtc::CopyOnWriteBuffer*, int64_t>
+        signal_rtcp_packet_received;
 
 private:
     bool _extract_params(DtlsTransport* dtls_transport,
@@ -36,6 +38,7 @@ private:
     void _on_dtls_state(DtlsTransport* dtls, DtlsTransportState state);
     void _on_read_packet(DtlsTransport* dtls, const char*data, size_t len, int64_t ts);
     void _on_rtp_packet_received(rtc::CopyOnWriteBuffer packet, int64_t ts);
+    void _on_rtcp_packet_received(rtc::CopyOnWriteBuffer packet, int64_t ts);
 
 private:
     std::string _transport_name;

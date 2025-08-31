@@ -51,6 +51,19 @@ bool SrtpSession::unprotect_rtp(void* p, int in_len, int* out_len) {
     return err == srtp_err_status_ok;
 }
 
+bool SrtpSession::unprotect_rtcp(void* p, int in_len, int* out_len) {
+    if (!_session) {
+        RTC_LOG(LS_WARNING) << "Failed to unprotect rtp packet: no SRTP session";
+        return false;
+    }
+
+    *out_len = in_len;
+
+    int err = srtp_unprotect_rtcp(_session, p, out_len);
+
+    return err == srtp_err_status_ok;
+}
+
 bool SrtpSession::_update_key(int type, int cs, const uint8_t* key, size_t key_len,
         const std::vector<int>& extension_ids)
 {

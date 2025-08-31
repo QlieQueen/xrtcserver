@@ -2,6 +2,7 @@
 #include "ice/port_allocator.h"
 #include "pc/peer_connection.h"
 #include "pc/peer_connection_def.h"
+#include "rtc_base/copy_on_write_buffer.h"
 
 #include <rtc_base/rtc_certificate.h>
 #include <rtc_base/logging.h>
@@ -17,6 +18,8 @@ RtcStream::RtcStream(EventLoop* el, PortAllocator* allocator,
     _pc(new PeerConnection(el, allocator))
 {
     _pc->signal_connection_state.connect(this, &RtcStream::_on_connection_state);
+    _pc->signal_rtp_packet_received.connect(this, &RtcStream::_on_rtp_packet_received);
+    _pc->signal_rtcp_packet_received.connect(this, &RtcStream::_on_rtcp_packet_received);
 }
     
 RtcStream::~RtcStream() {
@@ -37,6 +40,21 @@ void RtcStream::_on_connection_state(PeerConnection*, PeerConnectionState state)
     }
 }
 
+void RtcStream::_on_rtp_packet_received(PeerConnection*,
+        rtc::CopyOnWriteBuffer* packet, int64_t /*ts*/)
+{
+    if (!_listener) {
+        _listener->on_rtp_packet_received(this, (const char*)packet->data(), packet->size());
+    }
+}
+
+void RtcStream::_on_rtcp_packet_received(PeerConnection*,
+        rtc::CopyOnWriteBuffer* packet, int64_t /*ts*/)
+{
+    if (!_listener) {
+        _listener->on_rtcp_packet_received(this, (const char*)packet->data(), packet->size());
+    }
+}
 int RtcStream::start(rtc::RTCCertificate* certificate) {
     return _pc->init(certificate);
 }

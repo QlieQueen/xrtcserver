@@ -17,6 +17,8 @@ uint16_t parse_rtp_sequence_number(rtc::ArrayView<const uint8_t> packet);
 
 uint32_t parse_rtp_ssrc(rtc::ArrayView<const uint8_t> packet);
 
+bool get_rtcp_type(const void* data, size_t len, int* type);
+
 } // namespace xrtc
 
 
