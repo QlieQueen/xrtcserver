@@ -465,6 +465,13 @@ int PeerConnection::set_remote_sdp(const std::string& sdp) {
     return 0;
 }
 
+int PeerConnection::send_rtp(const char* data, size_t len) {
+    if (_transport_controller) {
+        // todo: 需要根据实际情况完善（是否bundle、是否音视频都发送）
+        _transport_controller->send_rtp("audio", data, len);
+    }
+}
+
 
 } // namespace xrtc
 

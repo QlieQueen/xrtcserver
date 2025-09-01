@@ -29,13 +29,13 @@ bool SrtpSession::update_send(int cs, const uint8_t* key, size_t key_len,
 bool SrtpSession::set_recv(int cs, const uint8_t* key, size_t key_len,
         const std::vector<int>& extension_ids)
 {
-    return _set_key(ssrc_any_outbound, cs, key, key_len, extension_ids);
+    return _set_key(ssrc_any_inbound, cs, key, key_len, extension_ids);
 }
 
 bool SrtpSession::update_recv(int cs, const uint8_t* key, size_t key_len,
         const std::vector<int>& extension_ids)
 {
-    return _update_key(ssrc_any_outbound, cs, key, key_len, extension_ids);
+    return _update_key(ssrc_any_inbound, cs, key, key_len, extension_ids);
 }
 
 bool SrtpSession::unprotect_rtp(void* p, int in_len, int* out_len) {

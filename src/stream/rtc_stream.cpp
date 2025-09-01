@@ -43,7 +43,7 @@ void RtcStream::_on_connection_state(PeerConnection*, PeerConnectionState state)
 void RtcStream::_on_rtp_packet_received(PeerConnection*,
         rtc::CopyOnWriteBuffer* packet, int64_t /*ts*/)
 {
-    if (!_listener) {
+    if (_listener) {
         _listener->on_rtp_packet_received(this, (const char*)packet->data(), packet->size());
     }
 }
@@ -51,7 +51,7 @@ void RtcStream::_on_rtp_packet_received(PeerConnection*,
 void RtcStream::_on_rtcp_packet_received(PeerConnection*,
         rtc::CopyOnWriteBuffer* packet, int64_t /*ts*/)
 {
-    if (!_listener) {
+    if (_listener) {
         _listener->on_rtcp_packet_received(this, (const char*)packet->data(), packet->size());
     }
 }
@@ -61,6 +61,13 @@ int RtcStream::start(rtc::RTCCertificate* certificate) {
 
 int RtcStream::set_remote_sdp(const std::string& sdp) {
     return _pc->set_remote_sdp(sdp);
+}
+
+int RtcStream::send_rtp(const char* data, size_t len) {
+    if (_pc) {
+        _pc->send_rtp(data, len);
+    }
+    return -1;
 }
 
 std::string RtcStream::to_string() {

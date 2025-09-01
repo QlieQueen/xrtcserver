@@ -197,4 +197,8 @@ bool DtlsSrtpTransport::_extract_params(DtlsTransport* dtls_transport,
     return true;
 }
 
+int DtlsSrtpTransport::send_rtp(const char* data, size_t len) {
+    return -1;
+}
+
 }
