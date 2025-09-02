@@ -47,6 +47,7 @@ private:
     DtlsTransport* _rtp_dtls_transport = nullptr;
     DtlsTransport* _rtcp_dtls_transport = nullptr;
     int _unprotect_fail_count = 0;
+    uint16_t _last_send_seq_num = 0;
 };
 
 } // namespace xrtvc

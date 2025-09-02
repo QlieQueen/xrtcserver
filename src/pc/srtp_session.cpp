@@ -38,6 +38,22 @@ bool SrtpSession::update_recv(int cs, const uint8_t* key, size_t key_len,
     return _update_key(ssrc_any_inbound, cs, key, key_len, extension_ids);
 }
 
+void SrtpSession::get_auth_tag_len(int* rtp_auth_tag_len, int* rtcp_auth_tag_len) {
+    if (!_session) {
+        RTC_LOG(LS_WARNING) << "Failed to get auth tag len: no SRTP session";
+        return;
+    }
+
+    if (rtp_auth_tag_len) {
+        *rtp_auth_tag_len = _rtp_auth_tag_len;
+    }
+
+    if (rtcp_auth_tag_len) {
+        *rtcp_auth_tag_len = _rtcp_auth_tag_len;
+    }
+
+}
+
 bool SrtpSession::unprotect_rtp(void* p, int in_len, int* out_len) {
     if (!_session) {
         RTC_LOG(LS_WARNING) << "Failed to unprotect rtp packet: no SRTP session";

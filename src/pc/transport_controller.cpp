@@ -228,7 +228,7 @@ int TransportController::set_remote_description(SessionDescription* desc) {
 int TransportController::send_rtp(const std::string& transport_name, const char* data, size_t len) {
     auto dtls_srtp = _get_dtls_srtp_transport(transport_name);
     if (dtls_srtp) {
-        dtls_srtp->send_rtp(data, len);
+        return dtls_srtp->send_rtp(data, len);
     }
     return -1;
 }
