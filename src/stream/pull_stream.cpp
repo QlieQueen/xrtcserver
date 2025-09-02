@@ -12,7 +12,7 @@ PullStream::PullStream(EventLoop* el, PortAllocator* allocator, uint64_t uid, co
 }
 
 PullStream::~PullStream() {
-    RTC_LOG(LS_INFO) << to_string() << ": Push stream destroy";
+    RTC_LOG(LS_INFO) << to_string() << ": Pull stream destroy";
 }
 
 // 对于xrtcserver来说，是向PullStream发送音视频
