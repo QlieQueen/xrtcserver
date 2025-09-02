@@ -1,4 +1,5 @@
 #include "stream/rtc_stream.h"
+#include "base/event_loop.h"
 #include "ice/port_allocator.h"
 #include "pc/peer_connection.h"
 #include "pc/peer_connection_def.h"
@@ -9,6 +10,8 @@
 #include <sstream>
 
 namespace xrtc {
+
+const size_t k_ice_timeout = 30000; // 30s
 
 RtcStream::RtcStream(EventLoop* el, PortAllocator* allocator, 
         uint64_t uid, const std::string& stream_name,
@@ -23,6 +26,10 @@ RtcStream::RtcStream(EventLoop* el, PortAllocator* allocator,
 }
     
 RtcStream::~RtcStream() {
+    if (_ice_timeout_wather) {
+        _el->delete_timer(_ice_timeout_wather);
+        _ice_timeout_wather = nullptr;
+    }
     _pc->destroy();
 }
 
@@ -34,6 +41,13 @@ void RtcStream::_on_connection_state(PeerConnection*, PeerConnectionState state)
     RTC_LOG(LS_INFO) << to_string() << ": PeerConnectionState change from " << _state
         << " to " << state;
     _state = state;
+
+    if (_state == PeerConnectionState::k_connected) {
+        if (_ice_timeout_wather) {
+            _el->delete_timer(_ice_timeout_wather);
+            _ice_timeout_wather = nullptr;
+        }
+    }
 
     if (_listener) {
         _listener->on_connection_state(this, state);
@@ -55,7 +69,17 @@ void RtcStream::_on_rtcp_packet_received(PeerConnection*,
         _listener->on_rtcp_packet_received(this, (const char*)packet->data(), packet->size());
     }
 }
+
+void ice_timeout_cb(EventLoop* el, TimerWatcher* w, void* data) {
+    RtcStream* stream = (RtcStream*)data;
+    if (stream->_state != PeerConnectionState::k_connected) {
+        delete stream;
+    }
+}
+
 int RtcStream::start(rtc::RTCCertificate* certificate) {
+    _ice_timeout_wather = _el->create_timer(ice_timeout_cb, this, false);
+    _el->start_timer(_ice_timeout_wather, k_ice_timeout * 1000);
     return _pc->init(certificate);
 }
 

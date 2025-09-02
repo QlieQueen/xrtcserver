@@ -11,7 +11,14 @@ SrtpSession::SrtpSession() {
 }
 
 SrtpSession::~SrtpSession() {
-    
+    if (_session) {
+        srtp_set_user_data(_session, nullptr);
+        srtp_dealloc(_session);
+    }
+
+    if (_inited) {
+        _decrement_libsrtp_usage_count_and_maybe_deinit();
+    }
 }
 
 bool SrtpSession::set_send(int cs, const uint8_t* key, size_t key_len,
@@ -187,6 +194,18 @@ bool SrtpSession::_increment_libsrtp_usage_count_and_maybe_init() {
 
     g_libsrtp_usage_count++;
     return true;
+}
+
+void SrtpSession::_decrement_libsrtp_usage_count_and_maybe_deinit() {
+    webrtc::GlobalMutexLock ls(&g_libsrtp_lock);
+
+    if (--g_libsrtp_usage_count) {
+        int err = srtp_shutdown();
+        if (err) {
+            RTC_LOG(LS_WARNING) << "Failed to shutdown srtp, err: " << err;
+            return;
+        }
+    }
 }
 
 bool SrtpSession::_set_key(int type, int cs, const uint8_t* key, size_t key_len,

@@ -67,10 +67,14 @@ protected:
     uint32_t _log_id;
 
     PeerConnection* _pc;
+
+private:
     PeerConnectionState _state = PeerConnectionState::k_new;
     RtcStreamListener* _listener = nullptr;
+    TimerWatcher* _ice_timeout_wather = nullptr; // 预防客户端只发送push和pull请求，没有发送answer，而导致stream资源泄漏
 
     friend class RtcStreamManager;
+    friend void ice_timeout_cb(EventLoop* el, TimerWatcher* w, void* data);
 };
 
 
