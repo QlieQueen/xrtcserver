@@ -70,6 +70,13 @@ int RtcStream::send_rtp(const char* data, size_t len) {
     return -1;
 }
 
+int RtcStream::send_rtcp(const char* data, size_t len) {
+    if (_pc) {
+        return _pc->send_rtcp(data, len);
+    }
+    return -1;
+}
+
 std::string RtcStream::to_string() {
     std::stringstream ss;
     ss << "Stream[" << this << "|" << _uid << "|" << _stream_name << "]";

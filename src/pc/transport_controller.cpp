@@ -225,10 +225,22 @@ int TransportController::set_remote_description(SessionDescription* desc) {
     return 0;
 }
 
-int TransportController::send_rtp(const std::string& transport_name, const char* data, size_t len) {
+int TransportController::send_rtp(const std::string& transport_name,
+        const char* data, size_t len)
+{
     auto dtls_srtp = _get_dtls_srtp_transport(transport_name);
     if (dtls_srtp) {
         return dtls_srtp->send_rtp(data, len);
+    }
+    return -1;
+}
+
+int TransportController::send_rtcp(const std::string& transport_name,
+        const char* data, size_t len)
+{
+    auto dtls_srtp = _get_dtls_srtp_transport(transport_name);
+    if (dtls_srtp) {
+        return dtls_srtp->send_rtcp(data, len);
     }
     return -1;
 }

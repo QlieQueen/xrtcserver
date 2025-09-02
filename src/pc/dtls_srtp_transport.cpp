@@ -129,7 +129,6 @@ int DtlsSrtpTransport::send_rtp(const char* buf, size_t size) {
     char* data = (char*)packet.data();
     int len = packet.size();
     uint16_t seq_num = parse_rtp_sequence_number(packet);
-    /*
     if (!protect_rtp(data, len, packet.capacity(), &len)) {
         RTC_LOG(LS_WARNING) << "Failed to protect rtp packet, size=" << len
             << ", seqnum=" << seq_num
@@ -142,11 +141,33 @@ int DtlsSrtpTransport::send_rtp(const char* buf, size_t size) {
 
     packet.SetSize(len);
 
-    return _rtp_dtls_transport->send_packet(packet.cdata(), packet.size());
-    */
-    return -1;
+    return _rtp_dtls_transport->send_packet((const char*)packet.cdata(), packet.size());
 }
 
+int DtlsSrtpTransport::send_rtcp(const char* buf, size_t size) {
+    if (!is_srtp_active()) {
+        RTC_LOG(LS_WARNING) << "Failed to send rtcp packet: Inactive srtp transport";
+        return -1;
+    }
+
+    int rtcp_auth_tag_len = 0;
+    get_send_auth_tag_len(nullptr, &rtcp_auth_tag_len);
+    rtc::CopyOnWriteBuffer packet(buf, size, size + rtcp_auth_tag_len + sizeof(uint32_t));
+    
+    char* data = (char*)packet.data();
+    int len = packet.size();
+    if (!protect_rtcp(data, len, packet.capacity(), &len)) {
+        int type = 0;
+        get_rtcp_type(data, len, &type);
+        RTC_LOG(LS_WARNING) << "Failed to protect rtp packet, size=" << len
+            << ", type=" << type;
+        return -1;
+    }
+
+    packet.SetSize(len);
+
+    return _rtp_dtls_transport->send_packet((const char*)packet.cdata(), packet.size());
+}
 bool DtlsSrtpTransport::is_dtls_writable() {
     auto rtcp_transport = _rtcp_mux_enabled ? nullptr : _rtcp_dtls_transport;
     return _rtp_dtls_transport && _rtp_dtls_transport->writable() &&
