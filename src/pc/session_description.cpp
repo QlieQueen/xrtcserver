@@ -305,6 +305,7 @@ static void build_ssrc(std::shared_ptr<MediaContentDescription> content,
         std::stringstream& ss)
 {
     for (auto track : content->streams()) {
+        // 生成SSRC组（FID等）
         for (auto ssrc_group : track.ssrc_groups) {
             if (ssrc_group.ssrcs.empty()) {
                 continue;
@@ -317,12 +318,15 @@ static void build_ssrc(std::shared_ptr<MediaContentDescription> content,
             ss << "\r\n";
         }
 
+        // PlanB格式：为每个SSRC生成完整的属性行
+        // 包括cname、msid、mslabel、label
         std::string msid = track.stream_id + " " + track.id;
         for (auto ssrc : track.ssrcs) {
             add_ssrc_line(ssrc, "cname", track.cname, ss);
-            //add_ssrc_line(ssrc, "msid", msid, ss);
-            //add_ssrc_line(ssrc, "mslabel", track.stream_id, ss);
-            //add_ssrc_line(ssrc, "label", track.id, ss);
+            // PlanB允许每个媒体部分多个track，添加msid相关属性
+            add_ssrc_line(ssrc, "msid", msid, ss);
+            add_ssrc_line(ssrc, "mslabel", track.stream_id, ss);
+            add_ssrc_line(ssrc, "label", track.id, ss);
         }
     }
 }

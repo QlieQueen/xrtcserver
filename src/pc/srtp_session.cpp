@@ -199,7 +199,7 @@ bool SrtpSession::_increment_libsrtp_usage_count_and_maybe_init() {
 void SrtpSession::_decrement_libsrtp_usage_count_and_maybe_deinit() {
     webrtc::GlobalMutexLock ls(&g_libsrtp_lock);
 
-    if (--g_libsrtp_usage_count) {
+    if (--g_libsrtp_usage_count == 0) {
         int err = srtp_shutdown();
         if (err) {
             RTC_LOG(LS_WARNING) << "Failed to shutdown srtp, err: " << err;
